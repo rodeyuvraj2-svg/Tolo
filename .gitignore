@@ -1,0 +1,29 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# SQLite Database & temporary journal files (privacy - personal screen time history)
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+screentime.sqlite3*
+
+# WebView2 Runtime cache & user data
+WebView2/
+EBWebView/
+*.userData/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+.vscode/
+.idea/
+
+# Agent & scratch files
+scratch/
+.system_generated/
+.user_uploaded/
