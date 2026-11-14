@@ -61,7 +61,6 @@ impl GuiService {
 
     /// Starts the background HTTP server for live dashboard APIs and runs the native desktop window event loop.
     pub fn run_desktop_app(&self) {
-        let _ = std::fs::write("gui_trace.txt", "1. run_desktop_app called\n");
         let mut server = None;
         let mut active_port = self.port;
         for p in self.port..self.port + 10 {
@@ -74,13 +73,9 @@ impl GuiService {
         }
         let server = match server {
             Some(s) => s,
-            None => {
-                let _ = std::fs::write("gui_trace.txt", "Failed to bind server\n");
-                return;
-            }
+            None => return,
         };
         let addr = format!("127.0.0.1:{}", active_port);
-        let _ = std::fs::write("gui_trace.txt", format!("2. Server bound on {}\n", addr));
 
         let db = Arc::clone(&self.db);
         let tracker = Arc::clone(&self.tracker);
@@ -209,16 +204,13 @@ impl GuiService {
         });
 
         // Native Tao Window Event Loop
-        let _ = std::fs::write("gui_trace.txt", "3. Creating EventLoop\n");
         let event_loop = EventLoop::new();
-        let _ = std::fs::write("gui_trace.txt", "4. Creating Window\n");
         let window = WindowBuilder::new()
             .with_title("Tolo")
             .with_inner_size(LogicalSize::new(1180.0, 820.0))
             .with_resizable(true)
             .build(&event_loop)
             .expect("Failed to create native desktop window");
-        let _ = std::fs::write("gui_trace.txt", "5. Window created\n");
 
         // System Tray Integration
         let main_hwnd = window.hwnd();
@@ -254,12 +246,10 @@ impl GuiService {
         let _ = std::fs::create_dir_all(&data_dir);
 
         let mut web_context = wry::WebContext::new(Some(data_dir));
-        let _ = std::fs::write("gui_trace.txt", "6. Before WebViewBuilder\n");
         let _webview = WebViewBuilder::new_with_web_context(&mut web_context)
             .with_url(&app_url)
             .build(&window)
             .expect("Failed to initialize WebView2 inside desktop window");
-        let _ = std::fs::write("gui_trace.txt", "7. WebView built successfully\n");
 
         println!("⚡ Native Tolo Desktop Application Launched with System Tray.");
 
