@@ -1,7 +1,15 @@
 # Rust build artifacts
 /target/
 **/*.rs.bk
-Cargo.lock
+
+# Temporary image, dump & log files
+*.tmp
+*.log
+*.bmp
+*.lnk
+run_log.txt
+gui_trace.txt
+event_trace.txt
 
 # SQLite Database & temporary journal files (privacy - personal screen time history)
 *.sqlite3
@@ -14,6 +22,7 @@ screentime.sqlite3*
 WebView2/
 EBWebView/
 *.userData/
+*.WebView2/
 
 # OS and Editor files
 .DS_Store

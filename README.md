@@ -9,9 +9,8 @@ A high-performance, private, 100% local Windows screen time and digital wellbein
 * **Name:** **Tolo**
 * **Identity:** Modern Apple/Fluent squircle style featuring an hourglass silhouette forming the letter **T** with electric blue, deep violet, and warm amber accents.
 * **Icon Assets:**
-  * Multi-resolution Windows Icon: [tolo.ico](file:///C:/Users/rodey/Desktop/Tolo/tolo.ico) (256x256, 128x128, 64x64, 48x48, 32x32, 16x16)
-  * High-res Logo Image: [tolo_logo.jpg](file:///C:/Users/rodey/Desktop/Tolo/ui/tolo_logo.jpg)
-  * In-App Embedded SVG/PNG Data: [logo_base64.txt](file:///C:/Users/rodey/Desktop/Tolo/ui/logo_base64.txt)
+  * Multi-resolution Windows Icon: `tolo.ico` (256x256, 128x128, 64x64, 48x48, 32x32, 16x16)
+  * In-App Embedded SVG/PNG Data: `ui/logo_base64.txt`
 
 ---
 
@@ -32,38 +31,43 @@ A high-performance, private, 100% local Windows screen time and digital wellbein
 ```text
 Tolo/
 ├── Cargo.toml            # Package configuration (name = "tolo")
+├── Cargo.lock            # Dependency lockfile
+├── build.rs              # Windows resource compiler configuration
 ├── tolo.ico              # Multi-size Windows application icon
 ├── README.md             # Architecture & documentation
 ├── ui/
 │   ├── index.html        # Embedded desktop UI with Tolo branding & logo
-│   ├── tolo_logo.jpg     # High-resolution logo
-│   └── logo_base64.txt   # Inlined logo Data URI
+│   ├── logo_base64.txt   # Inlined logo Data URI
+│   └── icons/            # Embedded fallback icon base64 payloads
 └── src/
     ├── main.rs           # Single-instance mutex enforcement & entrypoint
     ├── gui.rs            # Tao native desktop window + Wry WebView2 + background API server
     ├── tray.rs           # Win32 system tray message loop & native notifications
     ├── autostart.rs      # Windows Registry startup toggle (HKCU Run key)
     ├── tracker.rs        # Low-power background active window & idle monitoring thread
-    ├── db.rs             # SQLite database layer with all 7 schema tables & queries
+    ├── db.rs             # SQLite database layer with all schema tables & analytics queries
     ├── models.rs         # Data models & entity structs
     ├── icon_extractor.rs # Win32 icon extraction (extracts real .exe icons)
-    ├── limits.rs         # Daily app limits & downtime schedule evaluator
     └── windows_api.rs    # Safe Win32 API wrappers
 ```
 
 ---
 
-## 🚀 Running Tolo
+## 🚀 Building & Running Tolo
 
-### Option 1: Desktop Shortcut (One Click)
-* Double-click **`Tolo`** directly on your Windows desktop (`C:\Users\rodey\Desktop\Tolo.lnk`).
-* Launches instantaneously with the custom Tolo icon and no black command prompt.
+### Prerequisites
+* Windows 10 / 11 (64-bit)
+* [Rust](https://rustup.rs/) (msvc toolchain)
+* WebView2 Runtime (pre-installed on Windows 10/11)
 
-### Option 2: Running via Cargo
-In PowerShell:
+### Build from source
 ```powershell
-$env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-cd C:\Users\rodey\Desktop\Tolo
+cargo build --release
+```
+The compiled standalone binary will be located at `target\release\tolo.exe`.
+
+### Run
+```powershell
 cargo run --release
 ```
 
