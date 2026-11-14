@@ -147,3 +147,23 @@ pub struct WeeklyData {
     pub categories: Vec<CategoryStat>,
     pub top_apps: Vec<AppUsageDaily>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppDayTrend {
+    pub date: String,
+    pub day_name: String,
+    pub foreground_seconds: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppDetailData {
+    pub app_name: String,
+    pub display_name: String,
+    pub category: String,
+    pub icon_path: Option<String>,
+    pub total_foreground_seconds: i64,
+    pub daily_average_seconds: i64,
+    pub total_background_seconds: i64,
+    pub total_openings: i64,
+    pub trend: Vec<AppDayTrend>,
+}

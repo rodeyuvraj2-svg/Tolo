@@ -915,6 +915,127 @@
     .modal-btn-save:hover {
       background: #0052cc;
     }
+
+    /* Floating cursor-following tooltip */
+    .chart-floating-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 100000;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, -100%) translateY(-10px);
+      transition: opacity 0.12s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), left 0.04s ease-out, top 0.04s ease-out;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .chart-floating-tooltip.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .chart-tooltip-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .chart-tooltip-row {
+      font-size: 12.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.45;
+    }
+
+    /* App Details Modal */
+    .app-modal-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 24px;
+      width: 520px;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      position: relative;
+    }
+    .app-metric-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .app-metric-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .app-metric-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .app-range-btn {
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .app-range-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .app-trend-bar-col {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 6px;
+      position: relative;
+    }
+    .app-trend-bar-col:hover {
+      background: #f1f5f9;
+    }
+    .app-trend-bar-pill {
+      width: 14px;
+      border-radius: 4px 4px 0 0;
+      background: #cbd5e1;
+      transition: height 0.2s ease, background 0.15s ease;
+    }
+    .app-trend-bar-col:hover .app-trend-bar-pill,
+    .app-trend-bar-col.active .app-trend-bar-pill {
+      background: #0084ff !important;
+    }
+
+    .app-card {
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .app-card:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -1193,6 +1314,85 @@
       </div>
     </div>
 
+    <!-- App Details Modal matching media_1794676892616_2c1cb57d.jpg -->
+    <div id="appDetailsModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeAppDetailsModal()">
+      <div class="app-modal-card">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div id="appModalAvatar" class="app-avatar" style="width: 48px; height: 48px; border-radius: 14px; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #0066ff; font-weight: 700;"></div>
+            <div>
+              <h3 id="appModalTitle" style="font-size: 19px; font-weight: 700; color: #0f172a; margin: 0;">App Name</h3>
+              <p id="appModalCategory" style="font-size: 13px; font-weight: 500; color: #64748b; margin: 3px 0 0 0;">Category</p>
+            </div>
+          </div>
+          <button onclick="closeAppDetailsModal()" style="background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='#0f172a'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#94a3b8'; this.style.background='none';">✕</button>
+        </div>
+
+        <!-- Segmented Range Selector -->
+        <div class="app-modal-range-bar" style="background: #f1f5f9; border-radius: 10px; padding: 4px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 20px;">
+          <button class="app-range-btn" id="appRange1" onclick="switchAppRange(1)">Today</button>
+          <button class="app-range-btn" id="appRange7" onclick="switchAppRange(7)">7 Days</button>
+          <button class="app-range-btn active" id="appRange30" onclick="switchAppRange(30)">30 Days</button>
+          <button class="app-range-btn" id="appRange90" onclick="switchAppRange(90)">90 Days</button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px;">
+          <div class="app-metric-card">
+            <span class="app-metric-label">TOTAL TIME</span>
+            <span class="app-metric-value" id="appMetricTotal">0s</span>
+          </div>
+          <div class="app-metric-card">
+            <span class="app-metric-label">DAILY AVERAGE</span>
+            <span class="app-metric-value" id="appMetricDailyAvg">0s</span>
+          </div>
+          <div class="app-metric-card">
+            <span class="app-metric-label">BACKGROUND</span>
+            <span class="app-metric-value" id="appMetricBackground">0s</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+          <div class="app-metric-card">
+            <span class="app-metric-label">TOTAL OPENINGS</span>
+            <span class="app-metric-value" id="appMetricOpenings">0</span>
+          </div>
+        </div>
+
+        <!-- DAILY TREND Card -->
+        <div style="border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px;">
+            <span>📊</span>
+            <span>DAILY TREND</span>
+          </div>
+          <div class="app-trend-chart-container" id="appTrendChartContainer" style="height: 140px; display: flex; align-items: flex-end; position: relative; padding-left: 32px;">
+            <div id="appTrendYAxis" style="position: absolute; left: 0; top: 0; bottom: 0; width: 26px; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px; color: #94a3b8; font-weight: 600;">
+              <span id="trendY2">2h</span>
+              <span id="trendY1">1h</span>
+              <span id="trendY0">0h</span>
+            </div>
+            <!-- Horizontal grid guidelines -->
+            <div style="position: absolute; left: 32px; right: 0; top: 0; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
+            <div style="position: absolute; left: 32px; right: 0; top: 50%; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
+            <div style="position: absolute; left: 32px; right: 0; bottom: 0; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
+
+            <!-- Trend Bars Row -->
+            <div id="appTrendBars" style="width: 100%; height: 100%; display: flex; align-items: flex-end; gap: 8px; z-index: 1;">
+              <!-- Dynamic Bars -->
+            </div>
+          </div>
+          <!-- Trend X-Axis Labels -->
+          <div id="appTrendLabels" style="display: flex; gap: 8px; padding-left: 32px; margin-top: 8px; font-size: 11px; color: #94a3b8; font-weight: 600; text-align: center;">
+            <!-- Dynamic Labels matching bars -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Floating Tooltip that follows cursor smoothly -->
+    <div id="chartFloatingTooltip" class="chart-floating-tooltip"></div>
+
   </main>
 
   <script>
@@ -1275,6 +1475,153 @@
       if (hours > 0) return `${hours}h ${minutes}m`;
       if (minutes > 0) return `${minutes}m ${seconds}s`;
       return `${seconds}s`;
+    }
+
+    // Global floating tooltip that smoothly follows cursor
+    function showFloatingTooltip(e, html) {
+      const tooltip = document.getElementById('chartFloatingTooltip');
+      if (!tooltip) return;
+      tooltip.innerHTML = html;
+      tooltip.classList.add('visible');
+      updateFloatingTooltipPos(e.clientX, e.clientY);
+    }
+
+    function updateFloatingTooltipPos(clientX, clientY) {
+      const tooltip = document.getElementById('chartFloatingTooltip');
+      if (!tooltip || !tooltip.classList.contains('visible')) return;
+
+      const tWidth = tooltip.offsetWidth || 150;
+      const tHeight = tooltip.offsetHeight || 60;
+
+      let x = clientX;
+      let y = clientY - 14;
+
+      if (x - tWidth / 2 < 12) x = tWidth / 2 + 12;
+      if (x + tWidth / 2 > window.innerWidth - 12) x = window.innerWidth - tWidth / 2 - 12;
+
+      if (y - tHeight < 12) {
+        tooltip.style.transform = 'translate(-50%, 0) translateY(18px)';
+      } else {
+        tooltip.style.transform = 'translate(-50%, -100%) translateY(-12px)';
+      }
+
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+    }
+
+    function hideFloatingTooltip() {
+      const tooltip = document.getElementById('chartFloatingTooltip');
+      if (tooltip) {
+        tooltip.classList.remove('visible');
+      }
+    }
+
+    // App Details Modal matching media_1794676892616_2c1cb57d.jpg
+    let currentAppDetailsName = '';
+    let currentAppDetailsDays = 30;
+
+    async function openAppDetails(appName, days = 30) {
+      if (!appName) return;
+      currentAppDetailsName = appName;
+      currentAppDetailsDays = days;
+
+      const modal = document.getElementById('appDetailsModal');
+      if (modal) modal.style.display = 'flex';
+
+      [1, 7, 30, 90].forEach(d => {
+        const btn = document.getElementById('appRange' + d);
+        if (btn) {
+          if (d === days) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+
+      try {
+        const res = await fetch(`/api/app-details?app=${encodeURIComponent(appName)}&days=${days}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderAppDetailsModal(data);
+      } catch (err) {
+        console.error('Failed to load app details:', err);
+      }
+    }
+
+    function switchAppRange(days) {
+      if (!currentAppDetailsName) return;
+      openAppDetails(currentAppDetailsName, days);
+    }
+
+    function closeAppDetailsModal() {
+      const modal = document.getElementById('appDetailsModal');
+      if (modal) modal.style.display = 'none';
+      hideFloatingTooltip();
+    }
+
+    function renderAppDetailsModal(data) {
+      const name = data.display_name || data.app_name;
+      document.getElementById('appModalTitle').innerText = name;
+      document.getElementById('appModalCategory').innerText = data.category || 'Uncategorized';
+
+      const avatarEl = document.getElementById('appModalAvatar');
+      if (data.icon_path) {
+        avatarEl.innerHTML = `<img src="${data.icon_path}" alt="${name}" style="width: 100%; height: 100%; border-radius: 12px; object-fit: contain;" />`;
+      } else {
+        avatarEl.innerText = name.charAt(0).toUpperCase();
+      }
+
+      document.getElementById('appMetricTotal').innerText = formatHeroTime(data.total_foreground_seconds);
+      document.getElementById('appMetricDailyAvg').innerText = formatHeroTime(data.daily_average_seconds);
+      document.getElementById('appMetricBackground').innerText = formatHeroTime(data.total_background_seconds);
+      document.getElementById('appMetricOpenings').innerText = data.total_openings;
+
+      const trendBars = document.getElementById('appTrendBars');
+      const trendLabels = document.getElementById('appTrendLabels');
+      trendBars.innerHTML = '';
+      trendLabels.innerHTML = '';
+
+      const maxSec = Math.max(...(data.trend || []).map(t => t.foreground_seconds), 3600);
+      const maxHours = Math.ceil(maxSec / 3600);
+      document.getElementById('trendY2').innerText = `${maxHours}h`;
+      document.getElementById('trendY1').innerText = `${Math.ceil(maxHours / 2)}h`;
+      document.getElementById('trendY0').innerText = '0h';
+
+      if (!data.trend || data.trend.length === 0) return;
+
+      data.trend.forEach((item) => {
+        const col = document.createElement('div');
+        col.className = 'app-trend-bar-col';
+
+        const heightPct = Math.min(100, Math.max(0, (item.foreground_seconds / maxSec) * 100));
+        const pill = document.createElement('div');
+        pill.className = 'app-trend-bar-pill';
+        pill.style.height = `${Math.max(heightPct, 4)}%`;
+
+        col.appendChild(pill);
+
+        const tooltipHtml = `
+          <div class="chart-tooltip-title">${item.day_name}</div>
+          <div class="chart-tooltip-row" style="color: #0084ff; font-weight: 600;">
+            <span>foreground : ${formatTime(item.foreground_seconds)}</span>
+          </div>
+        `;
+
+        col.addEventListener('mouseenter', (e) => {
+          showFloatingTooltip(e, tooltipHtml);
+        });
+        col.addEventListener('mousemove', (e) => {
+          updateFloatingTooltipPos(e.clientX, e.clientY);
+        });
+        col.addEventListener('mouseleave', () => {
+          hideFloatingTooltip();
+        });
+
+        trendBars.appendChild(col);
+
+        const lbl = document.createElement('div');
+        lbl.style.flex = '1';
+        lbl.innerText = item.day_name;
+        trendLabels.appendChild(lbl);
+      });
     }
 
     function setMode(mode) {
@@ -1452,47 +1799,52 @@
 
         col.appendChild(stack);
 
-        // Interactive hover pillar & floating tooltip
-        col.addEventListener('mouseenter', () => {
-          let listHtml = '';
-          if (h.categories && h.categories.length > 0) {
-            const sortedCats = [...h.categories].sort((a, b) => a.name.localeCompare(b.name));
-            listHtml = sortedCats.map(cat => {
-              return `<div class="hourly-tooltip-item" style="color: ${cat.color};">
-                <span>${cat.name} : ${formatTime(cat.seconds)}</span>
-              </div>`;
-            }).join('');
-          } else {
-            listHtml = `<div style="color: #94a3b8; font-size: 12px; font-weight: 500;">No activity logged</div>`;
-          }
+        // Hover tooltip matching media_1794677083056_bb4759de.png with smooth cursor follow
+        const allCats = ['Browser', 'Communication', 'Development', 'Uncategorized', 'Utility'];
+        const catColors = {
+          'Browser': '#0066ff',
+          'Communication': '#6366f1',
+          'Development': '#f97316',
+          'Uncategorized': '#94a3b8',
+          'Utility': '#64748b'
+        };
 
-          tooltip.innerHTML = `
-            <div class="hourly-tooltip-hour">${formatHour(h.hour)}</div>
-            <div class="hourly-tooltip-list">${listHtml}</div>
-          `;
-          tooltip.style.display = 'block';
+        const catMap = {};
+        if (h.categories) {
+          h.categories.forEach(c => { catMap[c.name] = c.seconds; });
+        }
 
-          const cRect = container.getBoundingClientRect();
-          const colRect = col.getBoundingClientRect();
-          const tWidth = tooltip.offsetWidth || 185;
-          const colLeft = colRect.left - cRect.left;
+        const catRows = allCats.map(cat => {
+          const sec = catMap[cat] || 0;
+          const colHex = catColors[cat] || '#64748b';
+          return `<div class="chart-tooltip-row" style="color: ${colHex};">
+            <span>${cat} : ${formatTime(sec)}</span>
+          </div>`;
+        }).join('');
 
-          let left = colLeft + colRect.width + 12;
-          if (left + tWidth > cRect.width - 12) {
-            left = colLeft - tWidth - 12;
-          }
-          if (left < 8) left = 8;
+        const tooltipHtml = `
+          <div class="chart-tooltip-title">${formatHour(h.hour)}</div>
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            ${catRows}
+          </div>
+        `;
 
-          tooltip.style.left = `${left}px`;
-          tooltip.style.top = `10px`;
+        col.addEventListener('mouseenter', (e) => {
+          showFloatingTooltip(e, tooltipHtml);
         });
-
+        col.addEventListener('mousemove', (e) => {
+          updateFloatingTooltipPos(e.clientX, e.clientY);
+        });
         col.addEventListener('mouseleave', () => {
-          tooltip.style.display = 'none';
+          hideFloatingTooltip();
         });
 
         chartBars.appendChild(col);
       });
+
+      if (container) {
+        container.onmouseleave = () => hideFloatingTooltip();
+      }
 
       // Categories
       const catList = document.getElementById('categoryList');
@@ -1541,6 +1893,7 @@
 
           const card = document.createElement('div');
           card.className = 'app-card';
+          card.onclick = () => openAppDetails(app.app_name || app.display_name);
           card.innerHTML = `
             <div class="app-card-left">
               <div class="app-avatar">${avatarContent}</div>
@@ -1696,40 +2049,39 @@
           renderWeekly(data);
         });
 
-        // Hover tooltip matching screenshot media_1794676401467_bbc62d42.jpg & media_1794673091221_a20217d2.png
-        col.addEventListener('mouseenter', () => {
-          tooltip.innerHTML = `
-            <div class="hourly-tooltip-hour">${formatDayDate(d.date, false)}</div>
-            <div class="hourly-tooltip-item" style="color: #0066ff; font-weight: 600; font-size: 13px;">
-              <span>foreground : ${formatTime(d.seconds)}</span>
-            </div>
-            <div class="hourly-tooltip-item" style="color: #94a3b8; font-weight: 500; font-size: 12.5px; margin-top: 3px;">
-              <span>idle : ${formatTime(d.idle_seconds || 176)}</span>
-            </div>
-          `;
-          tooltip.style.display = 'block';
+        // Hover tooltip matching media_1794676988268_a65fd4e8.png with smooth cursor follow
+        const dayTitle = d.day_name || DAYS[new Date(d.date + 'T12:00:00').getDay()];
+        let idleLine = '';
+        if (d.idle_seconds && d.idle_seconds > 0) {
+          idleLine = `<div class="chart-tooltip-row" style="color: #94a3b8; font-weight: 500; font-size: 12px; margin-top: 2px;">
+            <span>idle : ${formatTime(d.idle_seconds)}</span>
+          </div>`;
+        }
 
-          const cRect = container.getBoundingClientRect();
-          const colRect = col.getBoundingClientRect();
-          const tWidth = tooltip.offsetWidth || 185;
-          const colLeft = colRect.left - cRect.left;
+        const tooltipHtml = `
+          <div class="chart-tooltip-title">${dayTitle}</div>
+          <div class="chart-tooltip-row" style="color: #0084ff; font-weight: 600;">
+            <span>foreground : ${formatTime(d.seconds)}</span>
+          </div>
+          ${idleLine}
+        `;
 
-          let left = colLeft + colRect.width + 12;
-          if (left + tWidth > cRect.width - 12) {
-            left = colLeft - tWidth - 12;
-          }
-          if (left < 8) left = 8;
-
-          tooltip.style.left = `${left}px`;
-          tooltip.style.top = `15px`;
+        col.addEventListener('mouseenter', (e) => {
+          showFloatingTooltip(e, tooltipHtml);
         });
-
+        col.addEventListener('mousemove', (e) => {
+          updateFloatingTooltipPos(e.clientX, e.clientY);
+        });
         col.addEventListener('mouseleave', () => {
-          tooltip.style.display = 'none';
+          hideFloatingTooltip();
         });
 
         chartBars.appendChild(col);
       });
+
+      if (container) {
+        container.onmouseleave = () => hideFloatingTooltip();
+      }
 
       // Categories for the week
       const catList = document.getElementById('categoryList');
@@ -1778,6 +2130,7 @@
 
           const card = document.createElement('div');
           card.className = 'app-card';
+          card.onclick = () => openAppDetails(app.app_name || app.display_name);
           card.innerHTML = `
             <div class="app-card-left">
               <div class="app-avatar">${avatarContent}</div>
@@ -1948,7 +2301,10 @@
     }
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeProfileModal();
+      if (e.key === 'Escape') {
+        closeProfileModal();
+        closeAppDetailsModal();
+      }
       if (e.key === 'Enter' && document.getElementById('profileModal').style.display === 'flex') {
         saveProfileModal();
       }

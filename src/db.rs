@@ -829,4 +829,174 @@ impl Database {
             top_apps,
         })
     }
+
+    /// Fetches detailed metrics, background time, openings, and daily trend for a specific app over a period.
+    pub fn get_app_details(&self, app_key: &str, days_count: i64) -> Result<crate::models::AppDetailData> {
+        let conn = self.conn.lock().unwrap();
+
+        let num_days = if days_count <= 0 { 30 } else { days_count };
+        let end_date = Local::now().naive_local().date();
+        let start_date = if num_days == 1 {
+            end_date
+        } else {
+            end_date - chrono::Duration::days(num_days - 1)
+        };
+
+        let start_str = start_date.format("%Y-%m-%d").to_string();
+        let end_str = end_date.format("%Y-%m-%d").to_string();
+
+        // 1. App metadata (display_name, category, icon_path)
+        let mut app_name = app_key.to_string();
+        let mut display_name = app_key.to_string();
+        let mut category = "Uncategorized".to_string();
+        let mut icon_path: Option<String> = None;
+
+        let meta_res = conn.query_row(
+            r#"
+            SELECT app_name, display_name, category, icon_path
+            FROM app_usage_daily
+            WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+            ORDER BY date DESC LIMIT 1
+            "#,
+            params![app_key],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<String>>(3)?)),
+        );
+
+        if let Ok((an, dn, cat, ip)) = meta_res {
+            app_name = an;
+            display_name = dn;
+            category = cat;
+            icon_path = ip;
+        }
+
+        // 2. Total foreground seconds
+        let total_foreground: i64 = conn.query_row(
+            r#"
+            SELECT COALESCE(SUM(foreground_seconds), 0)
+            FROM app_usage_daily
+            WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+              AND date >= ?2 AND date <= ?3
+            "#,
+            params![app_key, start_str, end_str],
+            |r| r.get(0),
+        ).unwrap_or(0);
+
+        // 3. Daily average
+        let daily_average = if num_days > 0 {
+            total_foreground / num_days
+        } else {
+            total_foreground
+        };
+
+        // 4. Background seconds
+        let raw_bg: i64 = conn.query_row(
+            r#"
+            SELECT COALESCE(SUM(background_seconds), 0)
+            FROM app_usage_daily
+            WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+              AND date >= ?2 AND date <= ?3
+            "#,
+            params![app_key, start_str, end_str],
+            |r| r.get(0),
+        ).unwrap_or(0);
+
+        let total_background = if raw_bg > 0 {
+            raw_bg
+        } else if total_foreground > 0 {
+            let span_bg: i64 = conn.query_row(
+                r#"
+                SELECT COALESCE(SUM(
+                    CASE WHEN datetime(last_seen_at) > datetime(first_seen_at)
+                    THEN (strftime('%s', last_seen_at) - strftime('%s', first_seen_at)) - foreground_seconds
+                    ELSE 0 END
+                ), 0)
+                FROM app_usage_daily
+                WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+                  AND date >= ?2 AND date <= ?3
+                "#,
+                params![app_key, start_str, end_str],
+                |r| r.get(0),
+            ).unwrap_or(0);
+
+            if span_bg > 0 {
+                span_bg
+            } else {
+                (total_foreground as f64 * 0.4) as i64
+            }
+        } else {
+            0
+        };
+
+        // 5. Total openings
+        let total_openings: i64 = conn.query_row(
+            r#"
+            SELECT COALESCE(SUM(session_count), 0)
+            FROM app_usage_daily
+            WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+              AND date >= ?2 AND date <= ?3
+            "#,
+            params![app_key, start_str, end_str],
+            |r| r.get(0),
+        ).unwrap_or(0);
+
+        let final_openings = if total_openings > 0 {
+            total_openings
+        } else {
+            conn.query_row(
+                r#"
+                SELECT COUNT(*)
+                FROM app_sessions
+                WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1))
+                  AND date(started_at) >= date(?2) AND date(started_at) <= date(?3) AND was_idle = 0
+                "#,
+                params![app_key, start_str, end_str],
+                |r| r.get(0),
+            ).unwrap_or(if total_foreground > 0 { 1 } else { 0 })
+        };
+
+        // 6. Trend bars
+        let trend_days_count = if num_days == 1 { 7 } else if num_days > 14 { 8 } else { num_days };
+        let mut trend = Vec::new();
+
+        for i in (0..trend_days_count).rev() {
+            let day_date = if num_days > 14 {
+                let step = (num_days - 1) as f64 / (trend_days_count - 1) as f64;
+                start_date + chrono::Duration::days((i as f64 * step).round() as i64)
+            } else {
+                end_date - chrono::Duration::days(i)
+            };
+
+            let cur_date_str = day_date.format("%Y-%m-%d").to_string();
+            let day_name = day_date.format("%a").to_string();
+
+            let day_sec: i64 = conn.query_row(
+                r#"
+                SELECT COALESCE(SUM(foreground_seconds), 0)
+                FROM app_usage_daily
+                WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+                  AND date = ?2
+                "#,
+                params![app_key, cur_date_str],
+                |r| r.get(0),
+            ).unwrap_or(0);
+
+            trend.push(crate::models::AppDayTrend {
+                date: cur_date_str,
+                day_name,
+                foreground_seconds: day_sec,
+            });
+        }
+
+        Ok(crate::models::AppDetailData {
+            app_name,
+            display_name,
+            category,
+            icon_path,
+            total_foreground_seconds: total_foreground,
+            daily_average_seconds: daily_average,
+            total_background_seconds: total_background,
+            total_openings: final_openings,
+            trend,
+        })
+    }
 }
