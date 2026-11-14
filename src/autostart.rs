@@ -108,6 +108,7 @@ pub fn ensure_shortcuts() {
                     "$wsh = New-Object -ComObject WScript.Shell; \
                      $sc = $wsh.CreateShortcut('{start_lnk}'); \
                      $sc.TargetPath = '{exe}'; \
+                     $sc.IconLocation = '{exe},0'; \
                      $sc.WorkingDirectory = '{dir}'; \
                      $sc.Description = 'Tolo'; \
                      $sc.Save()",

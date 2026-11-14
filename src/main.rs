@@ -21,12 +21,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 0. Auto-register Start Menu shortcut for new users on first launch
     autostart::ensure_shortcuts();
 
-    // Set modern Windows Application User Model ID for taskbar grouping and branding
-    unsafe {
-        use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
-        let _ = SetCurrentProcessExplicitAppUserModelID(windows::core::w!("YuvrajRode.Tolo.App.1.0"));
-    }
-
     // 1. Single Instance Mutex enforcement
     let mutex_name = windows::core::w!("Local\\Tolo_Rust_App_SingleInstance_Mutex");
     let _h_mutex = unsafe {
