@@ -639,19 +639,19 @@ impl Database {
 
         // 5. Pickups metrics
         let total_openings: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM app_sessions WHERE date(started_at) = date(?1) AND was_idle = 0",
+            "SELECT COUNT(*) FROM app_sessions WHERE substr(started_at, 1, 10) = ?1 AND was_idle = 0",
             params![date],
             |r| r.get(0),
         ).unwrap_or(0);
 
         let first_app: String = conn.query_row(
-            "SELECT COALESCE(NULLIF(app_name, ''), 'None') FROM app_sessions WHERE date(started_at) = date(?1) AND was_idle = 0 ORDER BY started_at ASC LIMIT 1",
+            "SELECT COALESCE(NULLIF(app_name, ''), 'None') FROM app_sessions WHERE substr(started_at, 1, 10) = ?1 AND was_idle = 0 ORDER BY started_at ASC LIMIT 1",
             params![date],
             |r| r.get(0),
         ).unwrap_or_else(|_| "None".to_string());
 
         let (most_opened_app, most_opened_count): (String, i64) = conn.query_row(
-            "SELECT COALESCE(NULLIF(app_name, ''), 'None'), COUNT(*) as cnt FROM app_sessions WHERE date(started_at) = date(?1) AND was_idle = 0 GROUP BY app_name ORDER BY cnt DESC LIMIT 1",
+            "SELECT COALESCE(NULLIF(app_name, ''), 'None'), COUNT(*) as cnt FROM app_sessions WHERE substr(started_at, 1, 10) = ?1 AND was_idle = 0 GROUP BY app_name ORDER BY cnt DESC LIMIT 1",
             params![date],
             |r| Ok((r.get(0)?, r.get(1)?)),
         ).unwrap_or_else(|_| ("None".to_string(), 0));
@@ -982,7 +982,7 @@ impl Database {
                 SELECT COUNT(*)
                 FROM app_sessions
                 WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1))
-                  AND date(started_at) >= date(?2) AND date(started_at) <= date(?3) AND was_idle = 0
+                  AND substr(started_at, 1, 10) >= ?2 AND substr(started_at, 1, 10) <= ?3 AND was_idle = 0
                 "#,
                 params![app_key, start_str, end_str],
                 |r| r.get(0),

@@ -257,11 +257,6 @@ impl GuiService {
             let _ = (&_webview, &window, &web_context);
             *control_flow = ControlFlow::Wait;
 
-            use std::io::Write;
-            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("event_trace.txt") {
-                let _ = writeln!(f, "Event: {:?}", event);
-            }
-
             match event {
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
