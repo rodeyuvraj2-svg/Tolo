@@ -584,12 +584,24 @@ impl Database {
         // 4. Top apps
         let mut apps_stmt = conn.prepare(
             r#"
-            SELECT id, date, app_name, display_name, icon_path, executable_path,
-                   latest_window_title, foreground_seconds, background_seconds, idle_seconds,
-                   first_seen_at, last_seen_at, session_count, category, is_game
+            SELECT MIN(id) as id, date,
+                   MAX(app_name) as app_name,
+                   COALESCE(NULLIF(display_name, ''), app_name) as disp_name,
+                   MAX(icon_path) as icon_path,
+                   MAX(executable_path) as executable_path,
+                   MAX(latest_window_title) as latest_window_title,
+                   SUM(foreground_seconds) as total_foreground,
+                   SUM(background_seconds) as total_background,
+                   SUM(idle_seconds) as total_idle,
+                   MIN(first_seen_at) as first_seen_at,
+                   MAX(last_seen_at) as last_seen_at,
+                   SUM(session_count) as total_sessions,
+                   MAX(category) as category,
+                   MAX(is_game) as is_game
             FROM app_usage_daily
             WHERE date = ?1 AND executable_path != '__idle__' AND foreground_seconds > 0
-            ORDER BY foreground_seconds DESC
+            GROUP BY disp_name
+            ORDER BY total_foreground DESC
             LIMIT 20
             "#
         )?;
@@ -776,10 +788,14 @@ impl Database {
         // Overall weekly top apps
         let mut apps_stmt = conn.prepare(
             r#"
-            SELECT app_name, display_name, executable_path, category, SUM(foreground_seconds) as sec
+            SELECT MAX(app_name) as app_name,
+                   COALESCE(NULLIF(display_name, ''), app_name) as disp_name,
+                   MAX(executable_path) as exec_path,
+                   MAX(category) as category,
+                   SUM(foreground_seconds) as sec
             FROM app_usage_daily
             WHERE date >= ?1 AND date <= ?2 AND executable_path != '__idle__' AND foreground_seconds > 0
-            GROUP BY executable_path
+            GROUP BY disp_name
             ORDER BY sec DESC
             LIMIT 20
             "#
