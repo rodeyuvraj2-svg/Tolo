@@ -196,6 +196,19 @@ unsafe fn extract_icon_as_base64_bmp(path: &str) -> Option<String> {
     // Pixel data (BGRA)
     bmp_bytes.extend_from_slice(&pixel_buffer);
 
+    // Filter out Windows default generic window placeholder icon (IDI_APPLICATION)
+    // When an app has no custom icon, Windows returns this generic placeholder.
+    if total_size == 4150 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in &pixel_buffer {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        if h == 0xb6d9d86f42262619 {
+            return None;
+        }
+    }
+
     let b64 = to_base64(&bmp_bytes);
     Some(format!("data:image/bmp;base64,{}", b64))
 }

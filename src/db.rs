@@ -850,23 +850,42 @@ impl Database {
         let mut display_name = app_key.to_string();
         let mut category = "Uncategorized".to_string();
         let mut icon_path: Option<String> = None;
+        let mut exec_path: Option<String> = None;
 
         let meta_res = conn.query_row(
             r#"
-            SELECT app_name, display_name, category, icon_path
+            SELECT app_name, display_name, category, icon_path, executable_path
             FROM app_usage_daily
             WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
             ORDER BY date DESC LIMIT 1
             "#,
             params![app_key],
-            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<String>>(3)?)),
+            |r| Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, Option<String>>(3)?,
+                r.get::<_, Option<String>>(4)?,
+            )),
         );
 
-        if let Ok((an, dn, cat, ip)) = meta_res {
+        if let Ok((an, dn, cat, ip, ep)) = meta_res {
             app_name = an;
             display_name = dn;
             category = cat;
             icon_path = ip;
+            exec_path = ep;
+        }
+
+        // Always resolve real icon data URI if icon_path is empty, null, or a filesystem path
+        if icon_path.as_ref().map(|s| !s.starts_with("data:")).unwrap_or(true) {
+            let extracted = exec_path.as_deref().and_then(|p| crate::icon_extractor::get_app_icon_data_uri(p))
+                .or_else(|| crate::icon_extractor::get_app_icon_data_uri(&app_name))
+                .or_else(|| crate::icon_extractor::get_app_icon_data_uri(&display_name))
+                .or_else(|| crate::icon_extractor::get_app_icon_data_uri(app_key));
+            if extracted.is_some() {
+                icon_path = extracted;
+            }
         }
 
         // 2. Total foreground seconds

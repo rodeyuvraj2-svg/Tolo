@@ -928,8 +928,8 @@
       box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
       opacity: 0;
       visibility: hidden;
-      transform: translate(-50%, -100%) translateY(-10px);
-      transition: opacity 0.12s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), left 0.04s ease-out, top 0.04s ease-out;
+      transform: none;
+      transition: opacity 0.12s ease, left 0.05s ease-out, top 0.05s ease-out;
       font-family: inherit;
       white-space: nowrap;
     }
@@ -1442,12 +1442,13 @@
     }
 
     function formatHeroTime(secs) {
-      if (!secs || secs <= 0) return '0 min';
+      if (!secs || secs <= 0) return '0m';
       const hours = Math.floor(secs / 3600);
       const minutes = Math.floor((secs % 3600) / 60);
-      if (hours > 0 && minutes > 0) return `${hours} hr, ${minutes} min`;
-      if (hours > 0) return `${hours} hr`;
-      return `${minutes} min`;
+      if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+      if (hours > 0) return `${hours}h`;
+      if (minutes > 0) return `${minutes}m`;
+      return '0m';
     }
 
     let currentDate = getLocalDateString();
@@ -1472,12 +1473,19 @@
       const hours = Math.floor(secs / 3600);
       const minutes = Math.floor((secs % 3600) / 60);
       const seconds = secs % 60;
-      if (hours > 0) return `${hours}h ${minutes}m`;
-      if (minutes > 0) return `${minutes}m ${seconds}s`;
+      if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+      if (minutes > 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
       return `${seconds}s`;
     }
 
-    // Global floating tooltip that smoothly follows cursor
+    // Identify Windows IDI_APPLICATION generic placeholder window icon
+    function isGenericPlaceholder(iconUri) {
+      if (!iconUri || typeof iconUri !== 'string') return true;
+      if (iconUri.length === 5558 && iconUri.startsWith('data:image/bmp;base64,Qk02E')) return true;
+      return false;
+    }
+
+    // Global floating tooltip that smoothly follows cursor at the side
     function showFloatingTooltip(e, html) {
       const tooltip = document.getElementById('chartFloatingTooltip');
       if (!tooltip) return;
@@ -1493,20 +1501,25 @@
       const tWidth = tooltip.offsetWidth || 150;
       const tHeight = tooltip.offsetHeight || 60;
 
-      let x = clientX;
-      let y = clientY - 14;
+      // Position to the side of cursor (right side by default, vertically centered)
+      let x = clientX + 16;
+      let y = clientY - Math.round(tHeight / 2);
 
-      if (x - tWidth / 2 < 12) x = tWidth / 2 + 12;
-      if (x + tWidth / 2 > window.innerWidth - 12) x = window.innerWidth - tWidth / 2 - 12;
+      // Flip to left side if overflowing right edge
+      if (x + tWidth > window.innerWidth - 12) {
+        x = clientX - tWidth - 16;
+      }
+      if (x < 12) x = 12;
 
-      if (y - tHeight < 12) {
-        tooltip.style.transform = 'translate(-50%, 0) translateY(18px)';
-      } else {
-        tooltip.style.transform = 'translate(-50%, -100%) translateY(-12px)';
+      // Keep within vertical screen bounds
+      if (y < 12) y = 12;
+      if (y + tHeight > window.innerHeight - 12) {
+        y = window.innerHeight - tHeight - 12;
       }
 
       tooltip.style.left = `${x}px`;
       tooltip.style.top = `${y}px`;
+      tooltip.style.transform = 'none';
     }
 
     function hideFloatingTooltip() {
@@ -1540,6 +1553,13 @@
         const res = await fetch(`/api/app-details?app=${encodeURIComponent(appName)}&days=${days}`);
         if (!res.ok) return;
         const data = await res.json();
+        if (!data.icon_path || isGenericPlaceholder(data.icon_path)) {
+          const topApps = (latestDashboardData?.top_apps || []).concat(latestWeeklyData?.top_apps || []);
+          const found = topApps.find(a => (a.app_name || '').toLowerCase() === (appName || '').toLowerCase() || (a.display_name || '').toLowerCase() === (appName || '').toLowerCase());
+          if (found && found.icon_path && !isGenericPlaceholder(found.icon_path)) {
+            data.icon_path = found.icon_path;
+          }
+        }
         renderAppDetailsModal(data);
       } catch (err) {
         console.error('Failed to load app details:', err);
@@ -1563,9 +1583,11 @@
       document.getElementById('appModalCategory').innerText = data.category || 'Uncategorized';
 
       const avatarEl = document.getElementById('appModalAvatar');
-      if (data.icon_path) {
-        avatarEl.innerHTML = `<img src="${data.icon_path}" alt="${name}" style="width: 100%; height: 100%; border-radius: 12px; object-fit: contain;" />`;
+      const hasRealIcon = data.icon_path && !isGenericPlaceholder(data.icon_path);
+      if (hasRealIcon) {
+        avatarEl.innerHTML = `<img src="${data.icon_path}" alt="${name}" onerror="this.style.display='none'; this.parentElement.innerText=this.alt ? this.alt.charAt(0).toUpperCase() : '?'" style="width: 100%; height: 100%; border-radius: 12px; object-fit: contain;" />`;
       } else {
+        avatarEl.innerHTML = '';
         avatarEl.innerText = name.charAt(0).toUpperCase();
       }
 
@@ -1887,8 +1909,9 @@
           const name = app.display_name || app.app_name;
           const initial = name.charAt(0).toUpperCase();
 
-          const avatarContent = app.icon_path
-            ? `<img src="${app.icon_path}" alt="${name}" />`
+          const hasRealIcon = app.icon_path && !isGenericPlaceholder(app.icon_path);
+          const avatarContent = hasRealIcon
+            ? `<img src="${app.icon_path}" alt="${name}" onerror="this.style.display='none'; this.parentElement.innerText=this.alt ? this.alt.charAt(0).toUpperCase() : '?'" />`
             : initial;
 
           const card = document.createElement('div');
@@ -2124,8 +2147,9 @@
           const name = app.display_name || app.app_name;
           const initial = name.charAt(0).toUpperCase();
 
-          const avatarContent = app.icon_path
-            ? `<img src="${app.icon_path}" alt="${name}" />`
+          const hasRealIcon = app.icon_path && !isGenericPlaceholder(app.icon_path);
+          const avatarContent = hasRealIcon
+            ? `<img src="${app.icon_path}" alt="${name}" onerror="this.style.display='none'; this.parentElement.innerText=this.alt ? this.alt.charAt(0).toUpperCase() : '?'" />`
             : initial;
 
           const card = document.createElement('div');
