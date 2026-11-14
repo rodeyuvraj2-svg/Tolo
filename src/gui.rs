@@ -207,7 +207,7 @@ impl GuiService {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("Tolo")
-            .with_inner_size(LogicalSize::new(1180.0, 820.0))
+            .with_inner_size(LogicalSize::new(1260.0, 880.0))
             .with_resizable(true)
             .build(&event_loop)
             .expect("Failed to create native desktop window");
@@ -253,6 +253,7 @@ impl GuiService {
 
         println!("⚡ Native Tolo Desktop Application Launched with System Tray.");
 
+        let tray_events = Arc::clone(&tray);
         event_loop.run(move |event, _, control_flow| {
             let _ = (&_webview, &window, &web_context);
             *control_flow = ControlFlow::Wait;
@@ -264,6 +265,11 @@ impl GuiService {
                 } => {
                     // Minimize to System Tray instead of quitting!
                     window.set_visible(false);
+                    tray_events.send_toast(
+                        "Tolo is running in the background",
+                        "Tolo is active in your notification area and continuing to track your screen time.",
+                        false,
+                    );
                 }
                 _ => (),
             }

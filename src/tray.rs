@@ -117,7 +117,7 @@ impl TrayService {
                 ..Default::default()
             };
 
-            let tip = "Tolo — Screen Time & Digital Wellbeing\0";
+            let tip = "Tolo — Running in Background (Tracking Active)\0";
             let tip_wide: Vec<u16> = tip.encode_utf16().collect();
             let copy_len = tip_wide.len().min(nid.szTip.len());
             nid.szTip[..copy_len].copy_from_slice(&tip_wide[..copy_len]);
@@ -138,9 +138,11 @@ impl TrayService {
     }
 
     /// Sends a native Windows Action Center Toast Notification via the system tray icon.
-    #[allow(dead_code)]
     pub fn send_toast(&self, title: &str, message: &str, is_warning: bool) {
-        let tray_hwnd = TRAY_WINDOW_HWND.load(Ordering::SeqCst);
+        let mut tray_hwnd = TRAY_WINDOW_HWND.load(Ordering::SeqCst);
+        if tray_hwnd == 0 {
+            tray_hwnd = MAIN_WINDOW_HWND.load(Ordering::SeqCst);
+        }
         if tray_hwnd == 0 {
             return;
         }
