@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 
+use tao::event_loop::EventLoopProxy;
 use windows::core::{w, PCWSTR};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::UI::Shell::{
@@ -20,6 +21,11 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WM_LBUTTONUP, WM_RBUTTONUP, WNDCLASSW, WS_OVERLAPPED,
 };
 
+#[derive(Debug, Clone, Copy)]
+pub enum CustomUserEvent {
+    RestoreWindow,
+}
+
 const WM_TRAYICON: u32 = WM_APP + 101;
 const ID_TRAY_OPEN: usize = 1001;
 const ID_TRAY_PAUSE: usize = 1002;
@@ -28,6 +34,13 @@ const ID_TRAY_QUIT: usize = 1003;
 static TRAY_WINDOW_HWND: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
 static MAIN_WINDOW_HWND: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
 static TRAY_PAUSED_PTR: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static EVENT_LOOP_PROXY: std::sync::Mutex<Option<EventLoopProxy<CustomUserEvent>>> = std::sync::Mutex::new(None);
+
+pub fn set_event_loop_proxy(proxy: EventLoopProxy<CustomUserEvent>) {
+    if let Ok(mut lock) = EVENT_LOOP_PROXY.lock() {
+        *lock = Some(proxy);
+    }
+}
 
 pub struct TrayService {
     is_paused: Arc<AtomicBool>,
@@ -171,6 +184,11 @@ impl TrayService {
 }
 
 pub fn restore_main_window() {
+    if let Ok(lock) = EVENT_LOOP_PROXY.lock() {
+        if let Some(proxy) = lock.as_ref() {
+            let _ = proxy.send_event(CustomUserEvent::RestoreWindow);
+        }
+    }
     let main_hwnd = MAIN_WINDOW_HWND.load(Ordering::SeqCst);
     if main_hwnd != 0 {
         unsafe {

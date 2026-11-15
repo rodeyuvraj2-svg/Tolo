@@ -149,9 +149,10 @@ pub struct WeeklyData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppDayTrend {
-    pub date: String,
-    pub day_name: String,
+pub struct AppTrendPoint {
+    pub start_date: String,
+    pub end_date: String,
+    pub label: String,
     pub foreground_seconds: i64,
 }
 
@@ -165,5 +166,5 @@ pub struct AppDetailData {
     pub daily_average_seconds: i64,
     pub total_background_seconds: i64,
     pub total_openings: i64,
-    pub trend: Vec<AppDayTrend>,
+    pub trend: Vec<AppTrendPoint>,
 }

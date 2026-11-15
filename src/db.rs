@@ -1,12 +1,18 @@
 use std::path::Path;
 use std::sync::Mutex;
-use chrono::Local;
+use chrono::{Local, Timelike};
 use rusqlite::{params, Connection, Result};
 
 use crate::models::{AppLimit, AppUsageDaily, CategoryStat, DashboardData, DowntimeSchedule, HourlyStat, PickupsInfo, TodaySummary};
 
 pub struct Database {
     conn: Mutex<Connection>,
+}
+
+pub struct HistoryDeleteCounts {
+    pub daily_records: usize,
+    pub hourly_records: usize,
+    pub sessions: usize,
 }
 
 impl Database {
@@ -122,7 +128,7 @@ impl Database {
                     ('background_scan_seconds', '10'),
                     ('daily_goal_minutes', '0'),
                     ('soft_limit_enabled', 'true'),
-                    ('theme', 'system');
+                    ('theme', 'light');
                 "#,
             )?;
         }
@@ -150,6 +156,46 @@ impl Database {
             params![key, value],
         )?;
         Ok(())
+    }
+
+    /// Deletes usage history within an inclusive date range, or all history when both dates are absent.
+    pub fn delete_history(
+        &self,
+        start_date: Option<&str>,
+        end_date: Option<&str>,
+    ) -> Result<HistoryDeleteCounts> {
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+
+        let (daily_records, hourly_records, sessions) = match (start_date, end_date) {
+            (Some(start), Some(end)) => (
+                tx.execute(
+                    "DELETE FROM app_usage_daily WHERE date >= ?1 AND date <= ?2",
+                    params![start, end],
+                )?,
+                tx.execute(
+                    "DELETE FROM app_usage_hourly WHERE date >= ?1 AND date <= ?2",
+                    params![start, end],
+                )?,
+                tx.execute(
+                    "DELETE FROM app_sessions WHERE substr(started_at, 1, 10) >= ?1 AND substr(started_at, 1, 10) <= ?2",
+                    params![start, end],
+                )?,
+            ),
+            (None, None) => (
+                tx.execute("DELETE FROM app_usage_daily", [])?,
+                tx.execute("DELETE FROM app_usage_hourly", [])?,
+                tx.execute("DELETE FROM app_sessions", [])?,
+            ),
+            _ => return Err(rusqlite::Error::InvalidParameterName("date range".to_string())),
+        };
+
+        tx.commit()?;
+        Ok(HistoryDeleteCounts {
+            daily_records,
+            hourly_records,
+            sessions,
+        })
     }
 
     /// Records foreground time for an application.
@@ -989,37 +1035,132 @@ impl Database {
             ).unwrap_or(if total_foreground > 0 { 1 } else { 0 })
         };
 
-        // 6. Trend bars
-        let trend_days_count = if num_days == 1 { 7 } else if num_days > 14 { 8 } else { num_days };
+        // 6. Trend bars: hourly for today, daily for up to 30 days, weekly beyond that.
         let mut trend = Vec::new();
-
-        for i in (0..trend_days_count).rev() {
-            let day_date = if num_days > 14 {
-                let step = (num_days - 1) as f64 / (trend_days_count - 1) as f64;
-                start_date + chrono::Duration::days((i as f64 * step).round() as i64)
-            } else {
-                end_date - chrono::Duration::days(i)
-            };
-
-            let cur_date_str = day_date.format("%Y-%m-%d").to_string();
-            let day_name = day_date.format("%a").to_string();
-
-            let day_sec: i64 = conn.query_row(
+        if num_days == 1 {
+            let mut hourly_seconds = [0i64; 24];
+            let trend_path = exec_path.as_deref().unwrap_or(app_key);
+            let mut stmt = conn.prepare(
                 r#"
-                SELECT COALESCE(SUM(foreground_seconds), 0)
-                FROM app_usage_daily
-                WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
-                  AND date = ?2
+                SELECT hour, COALESCE(SUM(foreground_seconds), 0)
+                FROM app_usage_hourly
+                WHERE date = ?1 AND (
+                    LOWER(executable_path) = LOWER(?2)
+                    OR LOWER(executable_path) = LOWER(?3)
+                    OR executable_path IN (
+                        SELECT executable_path FROM app_usage_daily
+                        WHERE LOWER(app_name) = LOWER(?3) OR LOWER(display_name) = LOWER(?3) OR LOWER(executable_path) = LOWER(?3)
+                    )
+                )
+                GROUP BY hour
                 "#,
-                params![app_key, cur_date_str],
-                |r| r.get(0),
-            ).unwrap_or(0);
+            )?;
+            let rows = stmt.query_map(params![end_str, trend_path, app_key], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
+            })?;
+            for row in rows {
+                let (hour, seconds) = row?;
+                if (0..24).contains(&hour) {
+                    hourly_seconds[hour as usize] = seconds;
+                }
+            }
 
-            trend.push(crate::models::AppDayTrend {
-                date: cur_date_str,
-                day_name,
-                foreground_seconds: day_sec,
-            });
+            if hourly_seconds.iter().sum::<i64>() == 0 && total_foreground > 0 {
+                // Fallback to app_sessions if app_usage_hourly had no matching rows
+                let mut sess_stmt = conn.prepare(
+                    r#"
+                    SELECT CAST(strftime('%H', started_at) AS INTEGER), COALESCE(SUM(duration_seconds), 0)
+                    FROM app_sessions
+                    WHERE substr(started_at, 1, 10) = ?1 AND was_idle = 0 AND (
+                        LOWER(executable_path) = LOWER(?2)
+                        OR LOWER(executable_path) = LOWER(?3)
+                        OR LOWER(app_name) = LOWER(?3)
+                    )
+                    GROUP BY 1
+                    "#,
+                )?;
+                let sess_rows = sess_stmt.query_map(params![end_str, trend_path, app_key], |row| {
+                    Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?))
+                })?;
+                for row in sess_rows {
+                    let (hour, seconds) = row?;
+                    if (0..24).contains(&hour) {
+                        hourly_seconds[hour as usize] += seconds;
+                    }
+                }
+
+                // If still zero, allocate total_foreground into current hour
+                if hourly_seconds.iter().sum::<i64>() == 0 {
+                    let current_hour = Local::now().hour() as usize;
+                    if current_hour < 24 {
+                        hourly_seconds[current_hour] = total_foreground;
+                    }
+                }
+            }
+
+            for (hour, seconds) in hourly_seconds.into_iter().enumerate() {
+                let label = match hour {
+                    0 => "12a".to_string(),
+                    12 => "12p".to_string(),
+                    1..=11 => format!("{}a", hour),
+                    _ => format!("{}p", hour - 12),
+                };
+                trend.push(crate::models::AppTrendPoint {
+                    start_date: end_str.clone(),
+                    end_date: end_str.clone(),
+                    label,
+                    foreground_seconds: seconds,
+                });
+            }
+        } else if num_days > 30 {
+            let mut bucket_start = start_date;
+            while bucket_start <= end_date {
+                let bucket_end = (bucket_start + chrono::Duration::days(6)).min(end_date);
+                let bucket_start_str = bucket_start.format("%Y-%m-%d").to_string();
+                let bucket_end_str = bucket_end.format("%Y-%m-%d").to_string();
+                let bucket_seconds: i64 = conn.query_row(
+                    r#"
+                    SELECT COALESCE(SUM(foreground_seconds), 0)
+                    FROM app_usage_daily
+                    WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+                      AND date >= ?2 AND date <= ?3
+                    "#,
+                    params![app_key, bucket_start_str, bucket_end_str],
+                    |row| row.get(0),
+                )?;
+                trend.push(crate::models::AppTrendPoint {
+                    start_date: bucket_start_str.clone(),
+                    end_date: bucket_end_str,
+                    label: bucket_start.format("%d %b").to_string(),
+                    foreground_seconds: bucket_seconds,
+                });
+                bucket_start = bucket_start + chrono::Duration::days(7);
+            }
+        } else {
+            for offset in 0..num_days {
+                let day_date = start_date + chrono::Duration::days(offset);
+                let date = day_date.format("%Y-%m-%d").to_string();
+                let day_seconds: i64 = conn.query_row(
+                    r#"
+                    SELECT COALESCE(SUM(foreground_seconds), 0)
+                    FROM app_usage_daily
+                    WHERE (LOWER(app_name) = LOWER(?1) OR LOWER(executable_path) = LOWER(?1) OR LOWER(display_name) = LOWER(?1))
+                      AND date = ?2
+                    "#,
+                    params![app_key, date],
+                    |row| row.get(0),
+                )?;
+                trend.push(crate::models::AppTrendPoint {
+                    start_date: date.clone(),
+                    end_date: date,
+                    label: if num_days <= 7 {
+                        day_date.format("%a").to_string()
+                    } else {
+                        day_date.format("%d").to_string()
+                    },
+                    foreground_seconds: day_seconds,
+                });
+            }
         }
 
         Ok(crate::models::AppDetailData {
@@ -1033,5 +1174,111 @@ impl Database {
             total_openings: final_openings,
             trend,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_history_removes_selected_usage_rows_and_preserves_settings_and_catalog() {
+        let db = Database::new(":memory:").unwrap();
+        {
+            let conn = db.conn.lock().unwrap();
+            for date in ["2026-03-09", "2026-03-10", "2026-03-20", "2026-03-21"] {
+                conn.execute(
+                    "INSERT INTO app_usage_daily (date, app_name, executable_path, first_seen_at, last_seen_at) VALUES (?1, 'App', 'app.exe', ?1, ?1)",
+                    params![date],
+                )
+                .unwrap();
+                conn.execute(
+                    "INSERT INTO app_usage_hourly (date, hour, executable_path, foreground_seconds) VALUES (?1, 10, 'app.exe', 60)",
+                    params![date],
+                )
+                .unwrap();
+                conn.execute(
+                    "INSERT INTO app_sessions (executable_path, app_name, started_at) VALUES ('app.exe', 'App', ?1)",
+                    params![format!("{}T10:00:00+00:00", date)],
+                )
+                .unwrap();
+            }
+            conn.execute(
+                "INSERT INTO app_catalog (executable_path, display_name) VALUES ('app.exe', 'App')",
+                [],
+            )
+            .unwrap();
+        }
+
+        let counts = db.delete_history(Some("2026-03-10"), Some("2026-03-20")).unwrap();
+        assert_eq!(counts.daily_records, 2);
+        assert_eq!(counts.hourly_records, 2);
+        assert_eq!(counts.sessions, 2);
+
+        let remaining = db.delete_history(None, None).unwrap();
+        assert_eq!(remaining.daily_records, 2);
+        assert_eq!(remaining.hourly_records, 2);
+        assert_eq!(remaining.sessions, 2);
+        assert_eq!(db.get_setting("theme").unwrap().as_deref(), Some("light"));
+
+        let conn = db.conn.lock().unwrap();
+        let catalog_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM app_catalog", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(catalog_count, 1);
+    }
+
+    #[test]
+    fn app_details_trend_uses_hourly_daily_and_weekly_ranges() {
+        let db = Database::new(":memory:").unwrap();
+        let today = Local::now().date_naive();
+        let first_date = today - chrono::Duration::days(89);
+        {
+            let conn = db.conn.lock().unwrap();
+            for offset in 0..90 {
+                let date = (first_date + chrono::Duration::days(offset))
+                    .format("%Y-%m-%d")
+                    .to_string();
+                conn.execute(
+                    "INSERT INTO app_usage_daily (date, app_name, display_name, icon_path, executable_path, first_seen_at, last_seen_at, foreground_seconds, session_count) VALUES (?1, 'Test App', 'Test App', 'data:image/svg+xml,test', 'test.exe', ?1, ?1, ?2, 1)",
+                    params![date, (offset + 1) * 60],
+                )
+                .unwrap();
+            }
+            let today_str = today.format("%Y-%m-%d").to_string();
+            conn.execute(
+                "INSERT INTO app_usage_hourly (date, hour, executable_path, foreground_seconds) VALUES (?1, 8, 'test.exe', 300), (?1, 15, 'test.exe', 600)",
+                params![today_str],
+            )
+            .unwrap();
+        }
+
+        let today_trend = db.get_app_details("test.exe", 1).unwrap().trend;
+        assert_eq!(today_trend.len(), 24);
+        assert_eq!(today_trend[8].foreground_seconds, 300);
+        assert_eq!(today_trend[15].foreground_seconds, 600);
+
+        let seven_day_trend = db.get_app_details("test.exe", 7).unwrap().trend;
+        assert_eq!(seven_day_trend.len(), 7);
+        assert_eq!(
+            seven_day_trend[0].start_date,
+            (today - chrono::Duration::days(6))
+                .format("%Y-%m-%d")
+                .to_string()
+        );
+
+        let thirty_day_trend = db.get_app_details("test.exe", 30).unwrap().trend;
+        assert_eq!(thirty_day_trend.len(), 30);
+
+        let ninety_day_trend = db.get_app_details("test.exe", 90).unwrap().trend;
+        assert_eq!(ninety_day_trend.len(), 13);
+        assert_eq!(
+            ninety_day_trend
+                .iter()
+                .map(|point| point.foreground_seconds)
+                .sum::<i64>(),
+            60 * (1..=90).sum::<i64>()
+        );
+        assert_eq!(ninety_day_trend.last().unwrap().end_date, today.format("%Y-%m-%d").to_string());
     }
 }

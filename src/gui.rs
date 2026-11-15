@@ -1,11 +1,11 @@
 use std::sync::Arc;
 use std::thread;
-use chrono::Local;
+use chrono::{Local, NaiveDate};
 use serde::Deserialize;
 use tao::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ControlFlow, EventLoopBuilder},
     platform::windows::WindowExtWindows,
     window::WindowBuilder,
 };
@@ -13,9 +13,9 @@ use tiny_http::{Header, Response, Server, StatusCode};
 use wry::WebViewBuilder;
 
 use crate::autostart;
-use crate::db::Database;
+use crate::db::{Database, HistoryDeleteCounts};
 use crate::tracker::TrackerService;
-use crate::tray::TrayService;
+use crate::tray::{self, CustomUserEvent, TrayService};
 
 const EMBEDDED_HTML: &str = include_str!("../ui/index.html");
 
@@ -46,6 +46,98 @@ fn url_decode(s: &str) -> String {
 #[derive(Deserialize)]
 struct AutostartRequest {
     enabled: bool,
+}
+
+#[derive(Deserialize)]
+struct NotifyMinimizeRequest {
+    enabled: bool,
+}
+
+#[derive(Deserialize)]
+struct ThemeRequest {
+    theme: String,
+}
+
+fn normalize_theme(theme: Option<&str>) -> &'static str {
+    match theme {
+        Some("dark") => "dark",
+        Some("light") => "light",
+        _ => "light",
+    }
+}
+
+#[derive(Deserialize)]
+struct DeleteHistoryRequest {
+    start_date: Option<String>,
+    end_date: Option<String>,
+}
+
+fn validate_history_range(
+    start_date: Option<String>,
+    end_date: Option<String>,
+) -> Result<Option<(String, String)>, &'static str> {
+    match (start_date, end_date) {
+        (None, None) => Ok(None),
+        (Some(start), Some(end)) => {
+            let parsed_start = NaiveDate::parse_from_str(&start, "%Y-%m-%d")
+                .map_err(|_| "Start date must use YYYY-MM-DD.")?;
+            let parsed_end = NaiveDate::parse_from_str(&end, "%Y-%m-%d")
+                .map_err(|_| "End date must use YYYY-MM-DD.")?;
+            if parsed_start.format("%Y-%m-%d").to_string() != start
+                || parsed_end.format("%Y-%m-%d").to_string() != end
+            {
+                return Err("Dates must use YYYY-MM-DD.");
+            }
+            if parsed_start > parsed_end {
+                return Err("Start date must be on or before the end date.");
+            }
+            Ok(Some((start, end)))
+        }
+        _ => Err("Provide both a start date and an end date, or neither to delete all history."),
+    }
+}
+
+fn delete_history_from_request(
+    db: &Database,
+    body: &str,
+) -> Result<HistoryDeleteCounts, (StatusCode, String)> {
+    let req_data = serde_json::from_str::<DeleteHistoryRequest>(body)
+        .map_err(|e| (StatusCode(400), format!("Invalid request: {}", e)))?;
+    let range = validate_history_range(req_data.start_date, req_data.end_date)
+        .map_err(|e| (StatusCode(400), e.to_string()))?;
+    let result = match range {
+        Some((start, end)) => db.delete_history(Some(&start), Some(&end)),
+        None => db.delete_history(None, None),
+    };
+    result.map_err(|e| (StatusCode(500), e.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{normalize_theme, validate_history_range};
+
+    #[test]
+    fn only_light_and_dark_themes_are_supported() {
+        assert_eq!(normalize_theme(Some("light")), "light");
+        assert_eq!(normalize_theme(Some("dark")), "dark");
+        assert_eq!(normalize_theme(Some("system")), "light");
+        assert_eq!(normalize_theme(None), "light");
+    }
+
+    #[test]
+    fn validates_history_delete_ranges() {
+        assert_eq!(
+            validate_history_range(
+                Some("2026-03-01".to_string()),
+                Some("2026-03-31".to_string())
+            )
+            .unwrap(),
+            Some(("2026-03-01".to_string(), "2026-03-31".to_string()))
+        );
+        assert!(validate_history_range(Some("2026-03-31".to_string()), Some("2026-03-01".to_string())).is_err());
+        assert!(validate_history_range(Some("2026-03-01".to_string()), None).is_err());
+        assert!(validate_history_range(Some("not-a-date".to_string()), Some("2026-03-01".to_string())).is_err());
+    }
 }
 
 pub struct GuiService {
@@ -196,6 +288,104 @@ impl GuiService {
                         let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
                         let _ = request.respond(response);
                     }
+                } else if method == "POST" && url_str == "/api/history/delete" {
+                    let mut body = String::new();
+                    let result = match request.as_reader().read_to_string(&mut body) {
+                        Ok(_) => delete_history_from_request(db.as_ref(), &body),
+                        Err(e) => Err((StatusCode(400), format!("Could not read request: {}", e))),
+                    };
+                    let (status, payload) = match result {
+                        Ok(counts) => {
+                            tracker_api.reset_active_session();
+                            (
+                                StatusCode(200),
+                                serde_json::json!({
+                                    "success": true,
+                                    "daily_records": counts.daily_records,
+                                    "hourly_records": counts.hourly_records,
+                                    "sessions": counts.sessions
+                                }),
+                            )
+                        }
+                        Err((status, error)) => (status, serde_json::json!({"error": error})),
+                    };
+                    let mut response = Response::from_string(payload.to_string()).with_status_code(status);
+                    response.add_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = request.respond(response);
+                } else if method == "GET" && url_str == "/api/settings/notify-minimize" {
+                    let enabled = db.get_setting("notify_on_minimize").ok().flatten().map(|v| v == "true").unwrap_or(false);
+                    let json = format!(r#"{{"notify_minimize": {}}}"#, enabled);
+                    let mut response = Response::from_string(json);
+                    response.add_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = request.respond(response);
+                } else if method == "POST" && url_str == "/api/settings/notify-minimize" {
+                    let mut body = String::new();
+                    let _ = request.as_reader().read_to_string(&mut body);
+                    if let Ok(req_data) = serde_json::from_str::<NotifyMinimizeRequest>(&body) {
+                        let val = if req_data.enabled { "true" } else { "false" };
+                        let res = db.set_setting("notify_on_minimize", val);
+                        let json = match res {
+                            Ok(_) => format!(r#"{{"success": true, "notify_minimize": {}}}"#, req_data.enabled),
+                            Err(e) => format!(r#"{{"error": "{}"}}"#, e),
+                        };
+                        let mut response = Response::from_string(json);
+                        response.add_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                        let _ = request.respond(response);
+                    } else {
+                        let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
+                        let _ = request.respond(response);
+                    }
+                } else if method == "GET" && url_str == "/api/settings/theme" {
+                    let theme_result = db.get_setting("theme").and_then(|stored_theme| {
+                        let theme = normalize_theme(stored_theme.as_deref());
+                        if stored_theme.as_deref() != Some(theme) {
+                            db.set_setting("theme", theme)?;
+                        }
+                        Ok(theme)
+                    });
+                    let (status, json) = match theme_result {
+                        Ok(theme) => (StatusCode(200), serde_json::json!({"theme": theme})),
+                        Err(error) => (
+                            StatusCode(500),
+                            serde_json::json!({"error": format!("Could not load theme: {error}")}),
+                        ),
+                    };
+                    let mut response =
+                        Response::from_string(json.to_string()).with_status_code(status);
+                    response.add_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                    let _ = request.respond(response);
+                } else if method == "POST" && url_str == "/api/settings/theme" {
+                    let mut body = String::new();
+                    let _ = request.as_reader().read_to_string(&mut body);
+                    if let Ok(req_data) = serde_json::from_str::<ThemeRequest>(&body) {
+                        let (status, json) = if matches!(req_data.theme.as_str(), "light" | "dark") {
+                            match db.set_setting("theme", &req_data.theme) {
+                                Ok(_) => (
+                                    StatusCode(200),
+                                    serde_json::json!({
+                                        "success": true,
+                                        "theme": req_data.theme
+                                    }),
+                                ),
+                                Err(error) => (
+                                    StatusCode(500),
+                                    serde_json::json!({"error": error.to_string()}),
+                                ),
+                            }
+                        } else {
+                            (
+                                StatusCode(400),
+                                serde_json::json!({"error": "Theme must be light or dark."}),
+                            )
+                        };
+                        let mut response =
+                            Response::from_string(json.to_string()).with_status_code(status);
+                        response.add_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap());
+                        let _ = request.respond(response);
+                    } else {
+                        let response = Response::from_string("Bad Request").with_status_code(StatusCode(400));
+                        let _ = request.respond(response);
+                    }
                 } else {
                     let response = Response::from_string("Not Found").with_status_code(StatusCode(404));
                     let _ = request.respond(response);
@@ -203,8 +393,11 @@ impl GuiService {
             }
         });
 
-        // Native Tao Window Event Loop
-        let event_loop = EventLoop::new();
+        // Native Tao Window Event Loop with Custom User Event Support
+        let event_loop = EventLoopBuilder::<CustomUserEvent>::with_user_event().build();
+        let proxy = event_loop.create_proxy();
+        tray::set_event_loop_proxy(proxy);
+
         let window = WindowBuilder::new()
             .with_title("Tolo")
             .with_inner_size(LogicalSize::new(1260.0, 880.0))
@@ -246,30 +439,88 @@ impl GuiService {
         let _ = std::fs::create_dir_all(&data_dir);
 
         let mut web_context = wry::WebContext::new(Some(data_dir));
-        let _webview = WebViewBuilder::new_with_web_context(&mut web_context)
-            .with_url(&app_url)
-            .build(&window)
-            .expect("Failed to initialize WebView2 inside desktop window");
+        let mut webview = Some(
+            WebViewBuilder::new_with_web_context(&mut web_context)
+                .with_url(&app_url)
+                .build(&window)
+                .expect("Failed to initialize WebView2 inside desktop window"),
+        );
 
         println!("⚡ Native Tolo Desktop Application Launched with System Tray.");
 
         let tray_events = Arc::clone(&tray);
+        let db_for_events = Arc::clone(&self.db);
         event_loop.run(move |event, _, control_flow| {
-            let _ = (&_webview, &window, &web_context);
+            let _ = (&webview, &window, &web_context);
             *control_flow = ControlFlow::Wait;
 
             match event {
+                Event::UserEvent(CustomUserEvent::RestoreWindow) => {
+                    if webview.is_none() {
+                        match WebViewBuilder::new_with_web_context(&mut web_context)
+                            .with_url(&app_url)
+                            .build(&window)
+                        {
+                            Ok(restored_webview) => webview = Some(restored_webview),
+                            Err(error) => {
+                                let message = format!("Could not restore the Tolo window: {error}");
+                                eprintln!("{message}");
+                                tray_events.send_toast("Could not open Tolo", &message, true);
+                                return;
+                            }
+                        }
+                    }
+                    window.set_visible(true);
+                    window.set_focus();
+                    unsafe {
+                        use windows::Win32::Foundation::HWND;
+                        use windows::Win32::UI::WindowsAndMessaging::{
+                            SetForegroundWindow, ShowWindow, SW_RESTORE, SW_SHOW,
+                        };
+                        let hwnd = HWND(main_hwnd as _);
+                        let _ = ShowWindow(hwnd, SW_SHOW);
+                        let _ = ShowWindow(hwnd, SW_RESTORE);
+                        let _ = SetForegroundWindow(hwnd);
+                    }
+                }
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
                     ..
                 } => {
-                    // Minimize to System Tray instead of quitting!
+                    // Minimize to System Tray instead of quitting
                     window.set_visible(false);
-                    tray_events.send_toast(
-                        "Tolo is running in the background",
-                        "Tolo is active in your notification area and continuing to track your screen time.",
-                        false,
-                    );
+                    webview.take();
+                    unsafe {
+                        use windows::Win32::Foundation::HWND;
+                        use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE};
+                        let _ = ShowWindow(HWND(main_hwnd as _), SW_HIDE);
+
+                        use windows::Win32::System::ProcessStatus::K32EmptyWorkingSet;
+                        use windows::Win32::System::Threading::GetCurrentProcess;
+                        let _ = K32EmptyWorkingSet(GetCurrentProcess());
+                    }
+
+                    // Check notification settings: avoid annoying spam on every close!
+                    let notify_enabled = db_for_events
+                        .get_setting("notify_on_minimize")
+                        .ok()
+                        .flatten()
+                        .map(|v| v == "true")
+                        .unwrap_or(false);
+                    let already_notified = db_for_events
+                        .get_setting("tray_minimize_first_notice")
+                        .ok()
+                        .flatten()
+                        .is_some();
+
+                    if notify_enabled || !already_notified {
+                        tray_events.send_toast(
+                            "Tolo is running in the background",
+                            "Tolo is active in your notification area and continuing to track your screen time.",
+                            false,
+                        );
+                        let _ = db_for_events.set_setting("tray_minimize_first_notice", "true");
+                    }
                 }
                 _ => (),
             }

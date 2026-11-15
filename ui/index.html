@@ -7,17 +7,52 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('tolo_theme');
+      const theme = (savedTheme === 'dark') ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <style>
     :root {
+      --app-scale: clamp(0.65, calc(100vw / 1280px), 1);
       --bg: #f8fafc;
       --sidebar-bg: #ffffff;
       --card-bg: #ffffff;
       --border: #e2e8f0;
+      --border-subtle: #f1f5f9;
       --text-main: #0f172a;
       --text-muted: #64748b;
       --text-light: #94a3b8;
       --primary: #2563eb;
       --primary-light: #eff6ff;
+      --primary-hover: #1d4ed8;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --modal-bg: #ffffff;
+      --modal-overlay: rgba(15, 23, 42, 0.45);
+      --tooltip-bg: #ffffff;
+      --tooltip-border: #e2e8f0;
+      --user-card-bg: #f8fafc;
+      --user-card-hover: #f1f5f9;
+      --toggle-track: #e2e8f0;
+      --toggle-btn-active: #ffffff;
+      --tag-bg: #ffffff;
+      --pickup-bg: #f8fafc;
+      --chart-guideline: #e2e8f0;
+      --chart-bar-hover: #e2e8f0;
+      --chart-bar-empty: #e2e8f0;
+      --btn-cancel-bg: #f1f5f9;
+      --btn-cancel-color: #475569;
+      --app-card-hover: #f8fafc;
+      --app-avatar-bg: #ffffff;
+      --app-avatar-border: #eef2f6;
+      --scrollbar-thumb: #cbd5e1;
+      --scrollbar-thumb-hover: #94a3b8;
+      --slider-bg: #cbd5e1;
+      --nav-hover: #f1f5f9;
+      --metric-card-bg: #ffffff;
       --blue: #2563eb;
       --orange: #ea580c;
       --purple: #7c3aed;
@@ -25,6 +60,52 @@
       --gray: #94a3b8;
       --success: #16a34a;
       --danger: #dc2626;
+    }
+
+    [data-theme="dark"] {
+      --bg: #090d16;
+      --sidebar-bg: #0f172a;
+      --card-bg: #131c31;
+      --border: #1e293b;
+      --border-subtle: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-light: #64748b;
+      --primary: #3b82f6;
+      --primary-light: rgba(59, 130, 246, 0.15);
+      --primary-hover: #60a5fa;
+      --input-bg: #1a2438;
+      --input-border: #334155;
+      --modal-bg: #131c31;
+      --modal-overlay: rgba(0, 0, 0, 0.75);
+      --tooltip-bg: #17223b;
+      --tooltip-border: #334155;
+      --user-card-bg: #17223b;
+      --user-card-hover: #1e2c4d;
+      --toggle-track: #1e293b;
+      --toggle-btn-active: #2a3a5c;
+      --tag-bg: #131c31;
+      --pickup-bg: #17223b;
+      --chart-guideline: #1e293b;
+      --chart-bar-hover: #1e2c4d;
+      --chart-bar-empty: #1e293b;
+      --btn-cancel-bg: #1e293b;
+      --btn-cancel-color: #cbd5e1;
+      --app-card-hover: #17223b;
+      --app-avatar-bg: #17223b;
+      --app-avatar-border: #334155;
+      --scrollbar-thumb: #334155;
+      --scrollbar-thumb-hover: #475569;
+      --slider-bg: #334155;
+      --nav-hover: #17223b;
+      --metric-card-bg: #17223b;
+      --blue: #3b82f6;
+      --orange: #f97316;
+      --purple: #8b5cf6;
+      --charcoal: #64748b;
+      --gray: #64748b;
+      --success: #22c55e;
+      --danger: #ef4444;
     }
 
     * {
@@ -35,12 +116,47 @@
       user-select: none;
     }
 
+    body,
+    .sidebar,
+    .main,
+    .top-bar,
+    .section-card,
+    .modal-card,
+    .app-modal-card,
+    .hourly-tooltip,
+    .app-metric-card,
+    .pickup-item,
+    .pill-tag,
+    .date-pill,
+    .today-pill-btn,
+    .nav-btn,
+    .pause-btn,
+    .theme-switch,
+    .theme-switch__input,
+    .theme-switch__icon,
+    .theme-switch__icon-part,
+    .view-toggle,
+    .toggle-btn,
+    .app-card,
+    .user-profile-card,
+    .nav-item,
+    .modal-input,
+    .slider,
+    .switch,
+    .app-avatar,
+    .app-modal-range-bar {
+      transition: background-color 0.14s ease-out,
+                  color 0.14s ease-out,
+                  border-color 0.14s ease-out;
+    }
+
     body {
       background-color: var(--bg);
       color: var(--text-main);
       display: flex;
-      height: 100vh;
+      height: calc(100vh / var(--app-scale));
       overflow: hidden;
+      zoom: var(--app-scale);
     }
 
     /* Sidebar */
@@ -53,6 +169,13 @@
       justify-content: space-between;
       padding: 24px 16px;
       flex-shrink: 0;
+    }
+
+    @media (max-width: 380px) {
+      .sidebar {
+        width: 180px;
+        padding: 16px 10px;
+      }
     }
 
     .brand {
@@ -113,7 +236,7 @@
     }
 
     .nav-item:hover:not(.active) {
-      background: #f1f5f9;
+      background: var(--nav-hover);
       color: var(--text-main);
     }
 
@@ -134,14 +257,14 @@
       align-items: center;
       gap: 12px;
       padding: 10px 12px;
-      background: #f8fafc;
+      background: var(--user-card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       transition: background 0.15s ease;
     }
 
     .user-profile-card:hover {
-      background: #f1f5f9;
+      background: var(--user-card-hover);
     }
 
     .user-avatar {
@@ -186,12 +309,60 @@
     /* Main Area */
     .main {
       flex: 1;
-      height: 100vh;
+      min-width: 0;
+      height: calc(100vh / var(--app-scale));
       overflow-y: auto;
       padding: 32px 40px;
       display: flex;
       flex-direction: column;
       gap: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .main {
+        padding: 24px;
+      }
+
+      .top-bar {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .top-bar > div:last-child {
+        flex-wrap: wrap;
+      }
+
+      .date-row {
+        flex-wrap: wrap;
+        row-gap: 12px;
+      }
+
+      .date-nav-group {
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+
+      .date-pill {
+        max-width: 180px;
+      }
+
+      .date-pill span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .main {
+        padding: 16px;
+      }
+
+      .date-pill {
+        max-width: 118px;
+      }
+
     }
 
     /* Modern Sleek Scrollbar */
@@ -202,11 +373,11 @@
       background: transparent;
     }
     .main::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: var(--scrollbar-thumb);
       border-radius: 8px;
     }
     .main::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: var(--scrollbar-thumb-hover);
     }
 
     /* Top Bar */
@@ -232,8 +403,156 @@
       letter-spacing: -0.5px;
     }
 
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--tag-bg);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-switch:hover {
+      background: var(--nav-hover);
+      border-color: var(--input-border);
+    }
+
+    .theme-switch__control {
+      position: relative;
+      width: 54px;
+      height: 30px;
+      flex: 0 0 auto;
+    }
+
+    .theme-switch__input {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 54px;
+      height: 30px;
+      margin: 0;
+      appearance: none;
+      border: 1px solid #e8d48a;
+      border-radius: 999px;
+      background: #fff3c4;
+      cursor: pointer;
+      transition: background-color 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .theme-switch__input::before {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #f5ad25;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+      content: "";
+      transition: background-color 0.18s ease-out, transform 0.18s ease-out;
+    }
+
+    .theme-switch__input:checked {
+      border-color: #334155;
+      background: #17243b;
+    }
+
+    .theme-switch__input:checked::before {
+      background: #60a5fa;
+      transform: translateX(24px);
+    }
+
+    .theme-switch__input:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+
+    .theme-switch__icon {
+      position: absolute;
+      z-index: 2;
+      top: 5px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      transition: transform 0.18s ease-out;
+    }
+
+    .theme-switch__icon-part {
+      position: absolute;
+      top: calc(50% - 4px);
+      left: calc(50% - 4px);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff8df;
+      transition: box-shadow 0.18s ease-out, opacity 0.18s ease-out, transform 0.18s ease-out;
+    }
+
+    .theme-switch__icon-part ~ .theme-switch__icon-part {
+      top: 50%;
+      left: calc(50% - 1px);
+      width: 2px;
+      height: 4px;
+      border-radius: 2px;
+      background: #d97706;
+      transform: rotate(0deg) translateY(7px);
+      transform-origin: 50% 0;
+    }
+
+    .theme-switch__icon-part:nth-child(3) { transform: rotate(45deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(4) { transform: rotate(90deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(5) { transform: rotate(135deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(6) { transform: rotate(180deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(7) { transform: rotate(225deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(8) { transform: rotate(270deg) translateY(7px); }
+    .theme-switch__icon-part:nth-child(9) { transform: rotate(315deg) translateY(7px); }
+
+    .theme-switch__input:checked ~ .theme-switch__icon {
+      transform: translateX(24px);
+    }
+
+    .theme-switch__input:checked ~ .theme-switch__icon .theme-switch__icon-part:first-child {
+      background: transparent;
+      box-shadow: inset -3px 2px 0 0 #f8fafc;
+      transform: scale(1.05);
+    }
+
+    .theme-switch__input:checked ~ .theme-switch__icon .theme-switch__icon-part ~ .theme-switch__icon-part {
+      opacity: 0;
+      transform: translateY(10px) scale(0.5);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body,
+      .sidebar,
+      .main,
+      .top-bar,
+      .section-card,
+      .modal-card,
+      .app-modal-card,
+      .theme-switch {
+        transition: none;
+      }
+
+      .theme-switch,
+      .theme-switch__input,
+      .theme-switch__input::before,
+      .theme-switch__icon,
+      .theme-switch__icon-part {
+        transition: none;
+      }
+    }
+
     .pause-btn {
-      background: white;
+      background: var(--tag-bg);
       border: 1px solid var(--border);
       padding: 8px 16px;
       border-radius: 20px;
@@ -244,19 +563,18 @@
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      transition: all 0.15s ease;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
     .pause-btn:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
+      background: var(--nav-hover);
+      border-color: var(--text-light);
     }
 
     .pause-btn.paused {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #dc2626;
+      background: rgba(220, 38, 38, 0.12);
+      border-color: rgba(220, 38, 38, 0.35);
+      color: #ef4444;
     }
 
     /* Date controls */
@@ -285,7 +603,7 @@
       height: 32px;
       border-radius: 8px;
       border: 1px solid var(--border);
-      background: white;
+      background: var(--tag-bg);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -293,16 +611,15 @@
       font-size: 14px;
       font-weight: 700;
       color: var(--text-muted);
-      transition: all 0.15s ease;
     }
 
     .nav-btn:hover {
-      background: #f1f5f9;
+      background: var(--nav-hover);
       color: var(--text-main);
     }
 
     .date-pill {
-      background: white;
+      background: var(--tag-bg);
       border: 1px solid var(--border);
       padding: 6px 14px;
       border-radius: 8px;
@@ -313,25 +630,23 @@
       align-items: center;
       gap: 6px;
       cursor: pointer;
-      transition: all 0.15s ease;
       box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
 
     .date-pill:hover {
-      border-color: #cbd5e1;
-      background: #f8fafc;
+      border-color: var(--text-light);
+      background: var(--nav-hover);
     }
 
     .today-pill-btn {
       padding: 6px 14px;
-      background: white;
+      background: var(--tag-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 12.5px;
       font-weight: 700;
-      color: #0066ff;
+      color: var(--primary);
       cursor: pointer;
-      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       gap: 4px;
@@ -339,19 +654,19 @@
     }
 
     .today-pill-btn:hover {
-      background: #eff6ff;
-      border-color: #93c5fd;
+      background: var(--primary-light);
+      border-color: var(--primary);
     }
 
     .today-pill-btn.active {
-      background: #0066ff;
+      background: var(--primary);
       color: white;
-      border-color: #0066ff;
-      box-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);
+      border-color: var(--primary);
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
     }
 
     .view-toggle {
-      background: #e2e8f0;
+      background: var(--toggle-track);
       padding: 3px;
       border-radius: 8px;
       display: flex;
@@ -370,7 +685,7 @@
     }
 
     .toggle-btn.active {
-      background: white;
+      background: var(--toggle-btn-active);
       color: var(--text-main);
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
@@ -404,7 +719,7 @@
     }
 
     .pill-tag {
-      background: white;
+      background: var(--tag-bg);
       border: 1px solid var(--border);
       padding: 6px 14px;
       border-radius: 20px;
@@ -421,7 +736,7 @@
 
     /* Streak Banner */
     .streak-banner {
-      background: white;
+      background: var(--card-bg);
       border: 1px solid var(--border);
       padding: 12px 18px;
       border-radius: 12px;
@@ -434,7 +749,7 @@
 
     /* Section Cards */
     .section-card {
-      background: white;
+      background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 24px;
@@ -485,7 +800,7 @@
 
     .chart-guideline {
       width: 100%;
-      border-top: 1px dashed #e2e8f0;
+      border-top: 1px dashed var(--chart-guideline);
     }
 
     .chart-bar-col {
@@ -503,22 +818,31 @@
 
     .chart-bar-col:hover,
     .chart-bar-col.active {
-      background: #cbd5e1;
+      background: var(--chart-bar-hover);
     }
 
     .chart-bar-stack {
       width: 16px;
+      min-width: 16px;
+      max-width: 16px;
       border-radius: 4px 4px 0 0;
       overflow: hidden;
       display: flex;
       flex-direction: column-reverse; /* Bottom to top */
+      align-items: stretch;
       transition: height 0.3s ease;
-      background: #e2e8f0;
+      background: var(--chart-bar-empty);
       pointer-events: none;
+      contain: paint;
+      isolation: isolate;
     }
 
     .chart-bar-segment {
-      width: 100%;
+      width: 16px;
+      min-width: 16px;
+      max-width: 16px;
+      box-sizing: border-box;
+      flex-shrink: 0;
       transition: height 0.2s ease;
     }
 
@@ -535,10 +859,10 @@
     .hourly-tooltip {
       position: absolute;
       z-index: 100;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
       border-radius: 14px;
-      box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
       padding: 14px 18px;
       pointer-events: none;
       display: none;
@@ -550,7 +874,7 @@
     .hourly-tooltip-hour {
       font-size: 15px;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--text-main);
       margin-bottom: 8px;
       letter-spacing: -0.2px;
     }
@@ -607,7 +931,7 @@
     .progress-track {
       width: 100%;
       height: 6px;
-      background: #f1f5f9;
+      background: var(--border-subtle);
       border-radius: 3px;
       overflow: hidden;
     }
@@ -629,17 +953,17 @@
       align-items: center;
       justify-content: space-between;
       padding: 14px 0;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .app-card:last-child {
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .see-all-btn {
       background: transparent;
       border: none;
-      color: #0066ff;
+      color: var(--primary);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -652,7 +976,7 @@
     }
 
     .see-all-btn:hover {
-      background: #eff6ff;
+      background: var(--primary-light);
       text-decoration: underline;
     }
 
@@ -665,8 +989,8 @@
     .app-avatar {
       width: 44px;
       height: 44px;
-      background: #ffffff;
-      border: 1px solid #eef2f6;
+      background: var(--app-avatar-bg);
+      border: 1px solid var(--app-avatar-border);
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
       display: flex;
@@ -688,7 +1012,7 @@
     .app-title-group h4 {
       font-size: 14.5px;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--text-main);
       letter-spacing: -0.2px;
       margin-bottom: 3px;
       line-height: 1.25;
@@ -697,7 +1021,7 @@
     .app-title-group p {
       font-size: 12px;
       font-weight: 500;
-      color: #64748b;
+      color: var(--text-muted);
       line-height: 1.2;
     }
 
@@ -711,21 +1035,21 @@
     .app-time {
       font-size: 13.5px;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--text-main);
       letter-spacing: -0.2px;
     }
 
     .app-bar-mini {
       width: 85px;
       height: 4px;
-      background: #f1f5f9;
+      background: var(--border-subtle);
       border-radius: 999px;
       overflow: hidden;
     }
 
     .app-bar-fill {
       height: 100%;
-      background: #0066ff;
+      background: var(--primary);
       border-radius: 999px;
       transition: width 0.3s ease;
     }
@@ -738,8 +1062,14 @@
       margin-top: 14px;
     }
 
+    @media (max-width: 380px) {
+      .pickups-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
     .pickup-item {
-      background: #f8fafc;
+      background: var(--pickup-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 16px;
@@ -785,7 +1115,7 @@
     }
 
     .btn-primary:hover {
-      background: #1d4ed8;
+      background: var(--primary-hover);
     }
 
     /* Switch Component */
@@ -809,7 +1139,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #cbd5e1;
+      background-color: var(--slider-bg);
       transition: .2s;
       border-radius: 24px;
     }
@@ -839,7 +1169,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 14px 0;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .setting-row:last-child {
@@ -858,11 +1188,160 @@
       color: var(--text-muted);
     }
 
+    .history-delete-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .history-delete-controls input {
+      padding: 9px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 12px;
+    }
+
+    .history-range-picker {
+      position: relative;
+      width: 230px;
+      max-width: 100%;
+    }
+
+    .history-range-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .history-range-trigger:hover,
+    .history-range-trigger[aria-expanded="true"] {
+      border-color: var(--primary);
+    }
+
+    .history-range-trigger:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .history-range-chevron {
+      display: flex;
+      color: var(--text-muted);
+      transition: transform 0.16s ease;
+    }
+
+    .history-range-trigger[aria-expanded="true"] .history-range-chevron {
+      transform: rotate(180deg);
+    }
+
+    .history-range-menu {
+      position: absolute;
+      z-index: 20;
+      bottom: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-bg);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+      transform-origin: bottom;
+      animation: history-range-menu-in 0.14s ease-out;
+    }
+
+    .history-range-menu[hidden] {
+      display: none;
+    }
+
+    .history-range-option {
+      width: 100%;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.14s ease, color 0.14s ease;
+    }
+
+    .history-range-option:hover,
+    .history-range-option:focus-visible {
+      outline: none;
+      background: var(--user-card-hover);
+    }
+
+    .history-range-option[aria-selected="true"] {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    @keyframes history-range-menu-in {
+      from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.99);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .history-range-trigger,
+      .history-range-chevron,
+      .history-range-option {
+        transition: none;
+      }
+
+      .history-range-menu {
+        animation: none;
+      }
+    }
+
+    .history-delete-button {
+      padding: 9px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--danger);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .history-delete-button:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+
     /* Modal */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.45);
+      background: var(--modal-overlay);
       backdrop-filter: blur(4px);
       z-index: 1000;
       display: flex;
@@ -871,37 +1350,37 @@
     }
 
     .modal-card {
-      background: #ffffff !important;
-      border: 1px solid #e2e8f0;
+      background: var(--modal-bg) !important;
+      border: 1px solid var(--border);
       border-radius: 16px;
       padding: 24px;
       width: 320px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     }
 
     .modal-input {
       width: 100%;
       padding: 10px 14px;
-      background: #ffffff !important;
-      border: 1.5px solid #cbd5e1 !important;
+      background: var(--input-bg) !important;
+      border: 1.5px solid var(--input-border) !important;
       border-radius: 10px;
       font-size: 14px;
-      color: #0f172a !important;
+      color: var(--text-main) !important;
       outline: none;
       box-sizing: border-box;
       transition: all 0.15s ease;
     }
 
     .modal-input:focus {
-      border-color: #0066ff !important;
-      background: #ffffff !important;
-      box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15) !important;
+      border-color: var(--primary) !important;
+      background: var(--input-bg) !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
     }
 
     .modal-btn-cancel {
       padding: 8px 16px;
-      background: #f1f5f9;
-      color: #475569;
+      background: var(--btn-cancel-bg);
+      color: var(--btn-cancel-color);
       border: none;
       border-radius: 8px;
       font-size: 13px;
@@ -911,12 +1390,12 @@
     }
 
     .modal-btn-cancel:hover {
-      background: #e2e8f0;
+      background: var(--border);
     }
 
     .modal-btn-save {
       padding: 8px 18px;
-      background: #0066ff;
+      background: var(--primary);
       color: white;
       border: none;
       border-radius: 8px;
@@ -924,11 +1403,11 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.15s ease;
-      box-shadow: 0 2px 4px rgba(0, 102, 255, 0.2);
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
     }
 
     .modal-btn-save:hover {
-      background: #0052cc;
+      background: var(--primary-hover);
     }
 
     /* Floating cursor-following tooltip */
@@ -936,26 +1415,28 @@
       position: fixed;
       pointer-events: none;
       z-index: 100000;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 10px 14px;
-      box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
+      border-radius: 14px;
+      padding: 12px 18px;
+      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.3), 0 4px 8px -2px rgba(0, 0, 0, 0.15);
       opacity: 0;
       visibility: hidden;
+      display: none;
       transform: none;
-      transition: opacity 0.12s ease, left 0.05s ease-out, top 0.05s ease-out;
+      transition: opacity 0.12s ease, left 0.06s ease-out, top 0.06s ease-out;
       font-family: inherit;
       white-space: nowrap;
     }
     .chart-floating-tooltip.visible {
-      opacity: 1;
-      visibility: visible;
+      opacity: 1 !important;
+      visibility: visible !important;
+      display: block !important;
     }
     .chart-tooltip-title {
       font-size: 13px;
       font-weight: 700;
-      color: #0f172a;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
     .chart-tooltip-row {
@@ -969,20 +1450,22 @@
 
     /* App Details Modal */
     .app-modal-card {
-      background: #ffffff !important;
-      border: 1px solid #e2e8f0;
+      background: var(--modal-bg) !important;
+      border: 1px solid var(--border);
       border-radius: 20px;
       padding: 24px;
-      width: 520px;
-      max-width: 92vw;
+      width: 540px;
+      max-width: min(540px, 94vw);
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      overflow-x: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
       position: relative;
+      box-sizing: border-box;
     }
     .app-metric-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--metric-card-bg);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 14px 16px;
       display: flex;
@@ -992,14 +1475,14 @@
     .app-metric-label {
       font-size: 10px;
       font-weight: 700;
-      color: #94a3b8;
+      color: var(--text-muted);
       letter-spacing: 0.5px;
       text-transform: uppercase;
     }
     .app-metric-value {
       font-size: 20px;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--text-main);
     }
     .app-range-btn {
       background: transparent;
@@ -1008,39 +1491,47 @@
       padding: 7px 0;
       font-size: 12px;
       font-weight: 500;
-      color: #64748b;
+      color: var(--text-muted);
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .app-range-btn.active {
-      background: #ffffff;
-      color: #0f172a;
+      background: var(--toggle-btn-active);
+      color: var(--text-main);
       font-weight: 600;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
     .app-trend-bar-col {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       align-items: center;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 4px;
       position: relative;
+      box-sizing: border-box;
     }
     .app-trend-bar-col:hover {
-      background: #f1f5f9;
+      background: var(--chart-bar-hover);
     }
     .app-trend-bar-pill {
-      width: 14px;
+      width: 100%;
+      max-width: 14px;
+      min-width: 2px;
       border-radius: 4px 4px 0 0;
-      background: #cbd5e1;
+      background: var(--chart-bar-empty);
       transition: height 0.2s ease, background 0.15s ease;
+      box-sizing: border-box;
     }
-    .app-trend-bar-col:hover .app-trend-bar-pill,
-    .app-trend-bar-col.active .app-trend-bar-pill {
-      background: #0084ff !important;
+    .app-trend-bar-col:hover .app-trend-bar-pill.has-time,
+    .app-trend-bar-col.active .app-trend-bar-pill.has-time {
+      filter: brightness(1.2);
+    }
+    .app-trend-bar-col:hover .app-trend-bar-pill:not(.has-time) {
+      opacity: 0.7;
     }
 
     .app-card {
@@ -1048,7 +1539,7 @@
       transition: background 0.15s ease, transform 0.1s ease;
     }
     .app-card:hover {
-      background: #f8fafc;
+      background: var(--app-card-hover);
       transform: translateY(-1px);
     }
   </style>
@@ -1109,10 +1600,30 @@
         <div class="header-sub">Windows Desktop</div>
         <h1 class="header-title" id="pageTitle">Tolo</h1>
       </div>
-      <button id="pauseBtn" class="pause-btn" onclick="togglePause()">
-        <span id="pauseIcon">⏸️</span>
-        <span id="pauseText">Pause</span>
-      </button>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label class="theme-switch">
+          <span>Light</span>
+          <span class="theme-switch__control">
+            <input id="themeToggleBtn" class="theme-switch__input" type="checkbox" role="switch" aria-label="Dark mode" data-theme-switch onchange="handleThemeSwitch(this)">
+            <span class="theme-switch__icon" aria-hidden="true">
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+              <span class="theme-switch__icon-part"></span>
+            </span>
+          </span>
+          <span>Dark</span>
+        </label>
+        <button id="pauseBtn" class="pause-btn" onclick="togglePause()">
+          <span id="pauseIcon">⏸️</span>
+          <span id="pauseText">Pause</span>
+        </button>
+      </div>
     </div>
 
     <!-- PANEL 1: DASHBOARD -->
@@ -1269,6 +1780,31 @@
           <span>Application Settings</span>
         </div>
 
+        <div class="setting-row" style="align-items: center;">
+          <div class="setting-info">
+            <h4>Appearance</h4>
+            <p id="themeSettingDesc">Switch between Light and Dark interface modes with butter-smooth transitions.</p>
+          </div>
+          <label class="theme-switch">
+            <span>Light</span>
+            <span class="theme-switch__control">
+              <input id="themeModeSwitch" class="theme-switch__input" type="checkbox" role="switch" aria-label="Dark mode" data-theme-switch onchange="handleThemeSwitch(this)">
+              <span class="theme-switch__icon" aria-hidden="true">
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+                <span class="theme-switch__icon-part"></span>
+              </span>
+            </span>
+            <span>Dark</span>
+          </label>
+        </div>
+
         <div class="setting-row">
           <div class="setting-info">
             <h4>Launch on Windows Startup</h4>
@@ -1286,6 +1822,17 @@
             <p>Closing the window (`X`) minimizes to the notification tray near the taskbar clock.</p>
           </div>
           <span style="font-size: 12px; font-weight: 700; color: var(--success);">ACTIVE</span>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>Notification on Close</h4>
+            <p>Show a system tray notification reminder each time Tolo is minimized to the background.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="notifyMinimizeToggle" onchange="toggleNotifyMinimize(this.checked)">
+            <span class="slider"></span>
+          </label>
         </div>
 
         <div class="setting-row">
@@ -1312,14 +1859,69 @@
           <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">screentime.sqlite3</span>
         </div>
       </div>
+
+      <div class="section-card" style="margin-top: 24px;">
+        <div>
+          <div class="section-title" style="margin-bottom: 8px;">
+            <span>🗑️</span>
+            <span>Delete Screen-time History</span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+            Choose a date range to permanently remove its recorded usage. This is manual; tracking continues and new history will be recorded.
+          </p>
+        </div>
+
+        <div class="history-delete-controls">
+          <span id="historyDeleteLabel" style="font-size: 12px; font-weight: 600;">History to delete</span>
+          <div class="history-range-picker" id="historyRangePicker">
+            <button
+              type="button"
+              id="historyRangeTrigger"
+              class="history-range-trigger"
+              aria-labelledby="historyDeleteLabel historyDeleteCurrent"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="historyRangeMenu"
+              onclick="toggleHistoryRangeMenu()"
+              onkeydown="handleHistoryRangeTriggerKeydown(event)">
+              <span id="historyDeleteCurrent">Last 30 days</span>
+              <span class="history-range-chevron" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                  <path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </span>
+            </button>
+            <div id="historyRangeMenu" class="history-range-menu" role="listbox" aria-labelledby="historyDeleteLabel" hidden>
+              <button type="button" class="history-range-option" role="option" aria-selected="true" tabindex="-1" data-value="30" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">Last 30 days</button>
+              <button type="button" class="history-range-option" role="option" aria-selected="false" tabindex="-1" data-value="90" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">Last 90 days</button>
+              <button type="button" class="history-range-option" role="option" aria-selected="false" tabindex="-1" data-value="year" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">Last year</button>
+              <button type="button" class="history-range-option" role="option" aria-selected="false" tabindex="-1" data-value="two-years" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">Last 2 years</button>
+              <button type="button" class="history-range-option" role="option" aria-selected="false" tabindex="-1" data-value="all" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">All history</button>
+              <button type="button" class="history-range-option" role="option" aria-selected="false" tabindex="-1" data-value="custom" onclick="selectHistoryDeleteRange(this)" onkeydown="handleHistoryRangeOptionKeydown(event, this)">Custom date range</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="customHistoryRange" class="history-delete-controls" style="display: none;">
+          <label for="historyDeleteStart" style="font-size: 12px; font-weight: 600;">From</label>
+          <input type="date" id="historyDeleteStart">
+          <label for="historyDeleteEnd" style="font-size: 12px; font-weight: 600;">To</label>
+          <input type="date" id="historyDeleteEnd">
+        </div>
+
+        <div class="history-delete-controls">
+          <button id="deleteHistoryButton" class="history-delete-button" onclick="deleteScreenTimeHistory()">Delete selected history</button>
+          <span id="historyDeleteStatus" role="status" aria-live="polite" style="font-size: 12px; color: var(--text-muted);"></span>
+        </div>
+      </div>
     </div>
 
     <!-- Profile Edit Modal -->
     <div id="profileModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeProfileModal()">
       <div class="modal-card">
-        <h3 style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 16px;">Edit Name</h3>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 16px;">Edit Name</h3>
         <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-          <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Name</label>
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Name</label>
           <input type="text" id="inputProfileName" class="modal-input" placeholder="Your Name" />
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
@@ -1335,17 +1937,17 @@
         <!-- Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <div id="appModalAvatar" class="app-avatar" style="width: 48px; height: 48px; border-radius: 14px; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #0066ff; font-weight: 700;"></div>
+            <div id="appModalAvatar" class="app-avatar" style="width: 48px; height: 48px; border-radius: 14px; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; background: var(--app-avatar-bg); color: var(--accent); font-weight: 700;"></div>
             <div>
-              <h3 id="appModalTitle" style="font-size: 19px; font-weight: 700; color: #0f172a; margin: 0;">App Name</h3>
-              <p id="appModalCategory" style="font-size: 13px; font-weight: 500; color: #64748b; margin: 3px 0 0 0;">Category</p>
+              <h3 id="appModalTitle" style="font-size: 19px; font-weight: 700; color: var(--text-main); margin: 0;">App Name</h3>
+              <p id="appModalCategory" style="font-size: 13px; font-weight: 500; color: var(--text-muted); margin: 3px 0 0 0;">Category</p>
             </div>
           </div>
-          <button onclick="closeAppDetailsModal()" style="background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='#0f172a'; this.style.background='#f1f5f9';" onmouseout="this.style.color='#94a3b8'; this.style.background='none';">✕</button>
+          <button onclick="closeAppDetailsModal()" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: all 0.15s ease;" onmouseover="this.style.color='var(--text-main)'; this.style.background='var(--toggle-track)';" onmouseout="this.style.color='var(--text-muted)'; this.style.background='none';">✕</button>
         </div>
 
         <!-- Segmented Range Selector -->
-        <div class="app-modal-range-bar" style="background: #f1f5f9; border-radius: 10px; padding: 4px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 20px;">
+        <div class="app-modal-range-bar" style="background: var(--toggle-track); border-radius: 10px; padding: 4px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 20px;">
           <button class="app-range-btn" id="appRange1" onclick="switchAppRange(1)">Today</button>
           <button class="app-range-btn" id="appRange7" onclick="switchAppRange(7)">7 Days</button>
           <button class="app-range-btn active" id="appRange30" onclick="switchAppRange(30)">30 Days</button>
@@ -1353,7 +1955,7 @@
         </div>
 
         <!-- Metric Cards -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
           <div class="app-metric-card">
             <span class="app-metric-label">TOTAL TIME</span>
             <span class="app-metric-value" id="appMetricTotal">0s</span>
@@ -1363,47 +1965,49 @@
             <span class="app-metric-value" id="appMetricDailyAvg">0s</span>
           </div>
           <div class="app-metric-card">
-            <span class="app-metric-label">BACKGROUND</span>
-            <span class="app-metric-value" id="appMetricBackground">0s</span>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-          <div class="app-metric-card">
             <span class="app-metric-label">TOTAL OPENINGS</span>
             <span class="app-metric-value" id="appMetricOpenings">0</span>
           </div>
         </div>
 
-        <!-- DAILY TREND Card -->
-        <div style="border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px;">
+        <!-- App usage trend -->
+        <div style="border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-sizing: border-box; width: 100%; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px;">
             <span>📊</span>
-            <span>DAILY TREND</span>
+            <span id="appTrendTitle">DAILY TREND</span>
           </div>
-          <div class="app-trend-chart-container" id="appTrendChartContainer" style="height: 140px; display: flex; align-items: flex-end; position: relative; padding-left: 32px;">
-            <div id="appTrendYAxis" style="position: absolute; left: 0; top: 0; bottom: 0; width: 26px; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px; color: #94a3b8; font-weight: 600;">
+          <!-- Chart: y-axis (fixed) + bars area (flex:1) side by side, no padding overflow -->
+          <div style="display: flex; height: 140px; width: 100%; box-sizing: border-box;">
+            <!-- Y-Axis: fixed 32px, never shrinks -->
+            <div id="appTrendYAxis" style="width: 32px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between; font-size: 10px; color: var(--text-muted); font-weight: 600; padding-bottom: 1px;">
               <span id="trendY2">2h</span>
               <span id="trendY1">1h</span>
               <span id="trendY0">0h</span>
             </div>
-            <!-- Horizontal grid guidelines -->
-            <div style="position: absolute; left: 32px; right: 0; top: 0; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
-            <div style="position: absolute; left: 32px; right: 0; top: 50%; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
-            <div style="position: absolute; left: 32px; right: 0; bottom: 0; border-top: 1px dashed #e2e8f0; pointer-events: none;"></div>
-
-            <!-- Trend Bars Row -->
-            <div id="appTrendBars" style="width: 100%; height: 100%; display: flex; align-items: flex-end; gap: 8px; z-index: 1;">
-              <!-- Dynamic Bars -->
+            <!-- Chart area: takes all remaining width, clips any overflow -->
+            <div style="flex: 1; min-width: 0; position: relative; overflow: hidden;">
+              <!-- Horizontal grid guidelines -->
+              <div style="position: absolute; left: 0; right: 0; top: 0; border-top: 1px dashed var(--chart-guideline); pointer-events: none;"></div>
+              <div style="position: absolute; left: 0; right: 0; top: 50%; border-top: 1px dashed var(--chart-guideline); pointer-events: none;"></div>
+              <div style="position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px dashed var(--chart-guideline); pointer-events: none;"></div>
+              <!-- Trend Bars Row -->
+              <div id="appTrendBars" style="width: 100%; height: 100%; display: flex; align-items: flex-end; gap: 2px; z-index: 1; box-sizing: border-box;">
+                <!-- Dynamic Bars -->
+              </div>
             </div>
           </div>
-          <!-- Trend X-Axis Labels -->
-          <div id="appTrendLabels" style="display: flex; gap: 8px; padding-left: 32px; margin-top: 8px; font-size: 11px; color: #94a3b8; font-weight: 600; text-align: center;">
-            <!-- Dynamic Labels matching bars -->
+          <!-- Trend X-Axis Labels: same flex layout so labels align with bars -->
+          <div style="display: flex; margin-top: 8px; width: 100%; box-sizing: border-box;">
+            <div style="width: 32px; flex-shrink: 0;"></div>
+            <div id="appTrendLabels" style="flex: 1; min-width: 0; display: flex; gap: 2px; overflow: hidden; font-size: 11px; color: var(--text-muted); font-weight: 600; text-align: center;">
+              <!-- Dynamic Labels matching bars -->
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+
 
     <!-- Global Floating Tooltip that follows cursor smoothly -->
     <div id="chartFloatingTooltip" class="chart-floating-tooltip"></div>
@@ -1505,35 +2109,45 @@
       const tooltip = document.getElementById('chartFloatingTooltip');
       if (!tooltip) return;
       tooltip.innerHTML = html;
+      tooltip.style.display = 'block';
       tooltip.classList.add('visible');
-      updateFloatingTooltipPos(e.clientX, e.clientY);
+      const cx = (e && typeof e.clientX === 'number') ? e.clientX : (window.innerWidth / 2);
+      const cy = (e && typeof e.clientY === 'number') ? e.clientY : (window.innerHeight / 2);
+      updateFloatingTooltipPos(cx, cy);
     }
 
     function updateFloatingTooltipPos(clientX, clientY) {
       const tooltip = document.getElementById('chartFloatingTooltip');
       if (!tooltip || !tooltip.classList.contains('visible')) return;
 
+      const scale = parseFloat(getComputedStyle(document.body).zoom) || 1;
+      const effectiveClientX = clientX / scale;
+      const effectiveClientY = clientY / scale;
+
       const tWidth = tooltip.offsetWidth || 150;
       const tHeight = tooltip.offsetHeight || 60;
 
-      // Position to the side of cursor (right side by default, vertically centered)
-      let x = clientX + 16;
-      let y = clientY - Math.round(tHeight / 2);
+      // Position to the side of cursor with comfortable breathing room (26px gap)
+      let x = effectiveClientX + 26;
+      let y = effectiveClientY - Math.round(tHeight / 2);
+
+      const maxW = (window.innerWidth / scale) - 16;
+      const maxH = (window.innerHeight / scale) - 16;
 
       // Flip to left side if overflowing right edge
-      if (x + tWidth > window.innerWidth - 12) {
-        x = clientX - tWidth - 16;
+      if (x + tWidth > maxW) {
+        x = effectiveClientX - tWidth - 26;
       }
-      if (x < 12) x = 12;
+      if (x < 16) x = 16;
 
       // Keep within vertical screen bounds
-      if (y < 12) y = 12;
-      if (y + tHeight > window.innerHeight - 12) {
-        y = window.innerHeight - tHeight - 12;
+      if (y < 16) y = 16;
+      if (y + tHeight > maxH) {
+        y = maxH - tHeight;
       }
 
-      tooltip.style.left = `${x}px`;
-      tooltip.style.top = `${y}px`;
+      tooltip.style.left = `${Math.round(x)}px`;
+      tooltip.style.top = `${Math.round(y)}px`;
       tooltip.style.transform = 'none';
     }
 
@@ -1541,8 +2155,10 @@
       const tooltip = document.getElementById('chartFloatingTooltip');
       if (tooltip) {
         tooltip.classList.remove('visible');
+        tooltip.style.display = 'none';
       }
     }
+
 
     // App Details Modal matching media_1794676892616_2c1cb57d.jpg
     let currentAppDetailsName = '';
@@ -1608,7 +2224,6 @@
 
       document.getElementById('appMetricTotal').innerText = formatHeroTime(data.total_foreground_seconds);
       document.getElementById('appMetricDailyAvg').innerText = formatHeroTime(data.daily_average_seconds);
-      document.getElementById('appMetricBackground').innerText = formatHeroTime(data.total_background_seconds);
       document.getElementById('appMetricOpenings').innerText = data.total_openings;
 
       const trendBars = document.getElementById('appTrendBars');
@@ -1616,29 +2231,97 @@
       trendBars.innerHTML = '';
       trendLabels.innerHTML = '';
 
-      const maxSec = Math.max(...(data.trend || []).map(t => t.foreground_seconds), 3600);
-      const maxHours = Math.ceil(maxSec / 3600);
-      document.getElementById('trendY2').innerText = `${maxHours}h`;
-      document.getElementById('trendY1').innerText = `${Math.ceil(maxHours / 2)}h`;
-      document.getElementById('trendY0').innerText = '0h';
+      const isHourlyTrend = currentAppDetailsDays === 1;
+      const isWeeklyTrend = currentAppDetailsDays > 30;
+      document.getElementById('appTrendTitle').innerText = isHourlyTrend
+        ? 'HOURLY TREND'
+        : isWeeklyTrend ? 'WEEKLY TREND' : 'DAILY TREND';
+      const gapVal = isHourlyTrend ? '2px' : currentAppDetailsDays === 30 ? '2px' : currentAppDetailsDays === 7 ? '6px' : '4px';
+      trendBars.style.gap = gapVal;
+      trendLabels.style.gap = gapVal;
+
+      const peakSec = Math.max(...(data.trend || []).map(t => t.foreground_seconds), 0);
+      let maxSec = 3600;
+      let y2Label = '1h';
+      let y1Label = '30m';
+      let y0Label = '0m';
+
+      if (peakSec <= 0) {
+        maxSec = isHourlyTrend ? 300 : 3600;
+        y2Label = isHourlyTrend ? '5m' : '1h';
+        y1Label = isHourlyTrend ? '2.5m' : '30m';
+        y0Label = isHourlyTrend ? '0m' : '0h';
+      } else if (peakSec <= 180) {
+        maxSec = 180;
+        y2Label = '3m';
+        y1Label = '1.5m';
+        y0Label = '0m';
+      } else if (peakSec <= 600) {
+        maxSec = 600;
+        y2Label = '10m';
+        y1Label = '5m';
+        y0Label = '0m';
+      } else if (peakSec <= 1800) {
+        maxSec = 1800;
+        y2Label = '30m';
+        y1Label = '15m';
+        y0Label = '0m';
+      } else if (peakSec <= 3600) {
+        maxSec = 3600;
+        y2Label = '1h';
+        y1Label = '30m';
+        y0Label = '0h';
+      } else {
+        const maxHours = Math.ceil(peakSec / 3600);
+        maxSec = maxHours * 3600;
+        y2Label = `${maxHours}h`;
+        y1Label = maxHours % 2 === 0 ? `${maxHours / 2}h` : `${(maxHours / 2).toFixed(1)}h`;
+        y0Label = '0h';
+      }
+
+      document.getElementById('trendY2').innerText = y2Label;
+      document.getElementById('trendY1').innerText = y1Label;
+      document.getElementById('trendY0').innerText = y0Label;
 
       if (!data.trend || data.trend.length === 0) return;
 
-      data.trend.forEach((item) => {
+      data.trend.forEach((item, index) => {
         const col = document.createElement('div');
         col.className = 'app-trend-bar-col';
 
-        const heightPct = Math.min(100, Math.max(0, (item.foreground_seconds / maxSec) * 100));
+        const hasTime = item.foreground_seconds > 0;
+        const heightPct = hasTime
+          ? Math.min(100, Math.max(8, (item.foreground_seconds / maxSec) * 100))
+          : 4;
         const pill = document.createElement('div');
         pill.className = 'app-trend-bar-pill';
-        pill.style.height = `${Math.max(heightPct, 4)}%`;
+        pill.style.height = `${heightPct}%`;
+        if (hasTime) {
+          pill.classList.add('has-time');
+          pill.style.background = 'var(--primary)';
+        } else {
+          pill.style.background = 'var(--chart-bar-empty)';
+        }
+        if (currentAppDetailsDays === 30) {
+          pill.style.maxWidth = '8px';
+        } else if (isHourlyTrend) {
+          pill.style.maxWidth = '8px';
+        } else if (currentAppDetailsDays === 7) {
+          pill.style.maxWidth = '18px';
+        } else {
+          pill.style.maxWidth = '12px';
+        }
 
         col.appendChild(pill);
 
+        const periodLabel = item.start_date === item.end_date
+          ? `${item.label}, ${item.start_date}`
+          : `${item.start_date} – ${item.end_date}`;
+
         const tooltipHtml = `
-          <div class="chart-tooltip-title">${item.day_name}</div>
+          <div class="chart-tooltip-title">${periodLabel}</div>
           <div class="chart-tooltip-row" style="color: #0084ff; font-weight: 600;">
-            <span>foreground : ${formatTime(item.foreground_seconds)}</span>
+            <span>Foreground: ${formatTime(item.foreground_seconds)}</span>
           </div>
         `;
 
@@ -1655,8 +2338,31 @@
         trendBars.appendChild(col);
 
         const lbl = document.createElement('div');
-        lbl.style.flex = '1';
-        lbl.innerText = item.day_name;
+        lbl.style.flex = '1 1 0';
+        lbl.style.minWidth = '0';
+        lbl.style.whiteSpace = 'nowrap';
+        lbl.style.fontSize = '10px';
+        lbl.style.overflow = currentAppDetailsDays > 30 ? 'visible' : 'hidden';
+
+        if (index === 0) {
+          lbl.style.textAlign = 'left';
+        } else if (index === data.trend.length - 1) {
+          lbl.style.textAlign = 'right';
+        } else {
+          lbl.style.textAlign = 'center';
+        }
+
+        let showLabel = false;
+        if (isHourlyTrend) {
+          showLabel = index % 4 === 0;
+        } else if (currentAppDetailsDays === 30) {
+          showLabel = index % 5 === 0 || index === data.trend.length - 1;
+        } else if (currentAppDetailsDays > 30) {
+          showLabel = index % 3 === 0 || (index === data.trend.length - 1 && index % 3 >= 2);
+        } else {
+          showLabel = true;
+        }
+        lbl.innerText = showLabel ? item.label : '';
         trendLabels.appendChild(lbl);
       });
     }
@@ -1831,7 +2537,7 @@
           stack.innerHTML = segments;
         } else {
           stack.style.height = '0%';
-          stack.style.background = '#e2e8f0';
+          stack.style.background = 'var(--chart-bar-empty)';
         }
 
         col.appendChild(stack);
@@ -1858,6 +2564,7 @@
             <span>${cat} : ${formatTime(sec)}</span>
           </div>`;
         }).join('');
+
 
         const tooltipHtml = `
           <div class="chart-tooltip-title">${formatHour(h.hour)}</div>
@@ -2096,6 +2803,7 @@
           </div>`;
         }
 
+
         const tooltipHtml = `
           <div class="chart-tooltip-title">${dayTitle}</div>
           <div class="chart-tooltip-row" style="color: #0084ff; font-weight: 600;">
@@ -2280,14 +2988,90 @@
       }
     }
 
+    // Theme Management (Light & Dark Only) with Butter-Smooth Transitions
+    function getCurrentTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    }
+
+    function setTheme(targetTheme, save = true) {
+      const theme = (targetTheme === 'dark') ? 'dark' : 'light';
+
+      document.documentElement.setAttribute('data-theme', theme);
+      try {
+        localStorage.setItem('tolo_theme', theme);
+      } catch (e) {}
+
+      updateThemeUI(theme);
+
+      if (save) {
+        fetch('/api/settings/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme })
+        }).catch(e => console.error('Failed to save theme:', e));
+      }
+
+    }
+
+    function applyTheme(theme, save = true) {
+      setTheme(theme, save);
+    }
+
+    function updateThemeUI(theme) {
+      const isDark = (theme === 'dark');
+
+      document.querySelectorAll('[data-theme-switch]').forEach(toggle => {
+        toggle.checked = isDark;
+      });
+
+      const desc = document.getElementById('themeSettingDesc');
+      if (desc) {
+        desc.innerText = isDark
+          ? 'Dark mode active (eye-comfort zinc theme).'
+          : 'Light mode active (clean high-clarity theme).';
+      }
+    }
+
+    function handleThemeSwitch(toggle) {
+      setTheme(toggle.checked ? 'dark' : 'light', true);
+    }
+
+    async function toggleNotifyMinimize(enabled) {
+      try {
+        await fetch('/api/settings/notify-minimize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+      } catch (e) {
+        console.error('Failed to save notify-on-minimize setting:', e);
+      }
+    }
+
     // Settings API
     async function fetchSettings() {
       try {
-        const res = await fetch('/api/settings/autostart');
-        const data = await res.json();
-        document.getElementById('autostartToggle').checked = !!data.autostart;
+        const [autostartRes, notifyRes, themeRes] = await Promise.all([
+          fetch('/api/settings/autostart').then(r => r.json()).catch(() => ({})),
+          fetch('/api/settings/notify-minimize').then(r => r.json()).catch(() => ({})),
+          fetch('/api/settings/theme').then(r => r.json()).catch(() => ({}))
+        ]);
+
+        const autostartEl = document.getElementById('autostartToggle');
+        if (autostartEl && autostartRes && autostartRes.autostart !== undefined) {
+          autostartEl.checked = !!autostartRes.autostart;
+        }
+
+        const notifyEl = document.getElementById('notifyMinimizeToggle');
+        if (notifyEl && notifyRes && notifyRes.notify_on_minimize !== undefined) {
+          notifyEl.checked = !!notifyRes.notify_on_minimize;
+        }
+
+        if (themeRes && themeRes.theme) {
+          setTheme(themeRes.theme, false);
+        }
       } catch (e) {
-        console.error(e);
+        console.error('Failed to fetch settings:', e);
       }
     }
 
@@ -2300,6 +3084,162 @@
         });
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    let selectedHistoryDeleteRange = '30';
+
+    function setHistoryRangeMenuOpen(isOpen) {
+      const trigger = document.getElementById('historyRangeTrigger');
+      const menu = document.getElementById('historyRangeMenu');
+      menu.hidden = !isOpen;
+      trigger.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function toggleHistoryRangeMenu() {
+      const menu = document.getElementById('historyRangeMenu');
+      const isOpening = menu.hidden;
+      setHistoryRangeMenuOpen(isOpening);
+      if (isOpening) {
+        document.querySelector(`.history-range-option[data-value="${selectedHistoryDeleteRange}"]`).focus();
+      }
+    }
+
+    function selectHistoryDeleteRange(option) {
+      selectedHistoryDeleteRange = option.dataset.value;
+      document.getElementById('historyDeleteCurrent').innerText = option.innerText;
+      document.querySelectorAll('.history-range-option').forEach(item => {
+        item.setAttribute('aria-selected', String(item === option));
+      });
+      setHistoryRangeMenuOpen(false);
+      document.getElementById('historyRangeTrigger').focus();
+      toggleCustomHistoryRange();
+    }
+
+    function toggleCustomHistoryRange() {
+      const isCustom = selectedHistoryDeleteRange === 'custom';
+      document.getElementById('customHistoryRange').style.display = isCustom ? 'flex' : 'none';
+    }
+
+    function handleHistoryRangeTriggerKeydown(event) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (document.getElementById('historyRangeMenu').hidden) {
+          toggleHistoryRangeMenu();
+        }
+      }
+    }
+
+    function handleHistoryRangeOptionKeydown(event, option) {
+      const options = Array.from(document.querySelectorAll('.history-range-option'));
+      const index = options.indexOf(option);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        options[(index + direction + options.length) % options.length].focus();
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        options[0].focus();
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        options[options.length - 1].focus();
+      } else if (event.key === 'Escape') {
+        setHistoryRangeMenuOpen(false);
+        document.getElementById('historyRangeTrigger').focus();
+      }
+    }
+
+    document.addEventListener('click', event => {
+      if (!document.getElementById('historyRangePicker').contains(event.target)) {
+        setHistoryRangeMenuOpen(false);
+      }
+    });
+
+    function formatHistoryDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function subtractCalendarYears(date, years) {
+      const result = new Date(date.getTime());
+      const dayOfMonth = result.getDate();
+      result.setDate(1);
+      result.setFullYear(result.getFullYear() - years);
+      const lastDayOfMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+      result.setDate(Math.min(dayOfMonth, lastDayOfMonth));
+      return result;
+    }
+
+    function getHistoryDeleteRange() {
+      const selection = selectedHistoryDeleteRange;
+      if (selection === 'all') return { startDate: null, endDate: null };
+      if (selection === 'custom') {
+        const startDate = document.getElementById('historyDeleteStart').value;
+        const endDate = document.getElementById('historyDeleteEnd').value;
+        if (!startDate || !endDate) throw new Error('Choose both a start date and an end date.');
+        if (startDate > endDate) throw new Error('The start date must be on or before the end date.');
+        return { startDate, endDate };
+      }
+
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      let start = new Date(end);
+      if (selection === '30' || selection === '90') {
+        start.setDate(start.getDate() - (Number(selection) - 1));
+      } else if (selection === 'year') {
+        start = subtractCalendarYears(end, 1);
+      } else if (selection === 'two-years') {
+        start = subtractCalendarYears(end, 2);
+      }
+      return { startDate: formatHistoryDate(start), endDate: formatHistoryDate(end) };
+    }
+
+    async function deleteScreenTimeHistory() {
+      const button = document.getElementById('deleteHistoryButton');
+      const status = document.getElementById('historyDeleteStatus');
+      status.style.color = 'var(--text-muted)';
+
+      let range;
+      try {
+        range = getHistoryDeleteRange();
+      } catch (e) {
+        status.style.color = 'var(--danger)';
+        status.innerText = e.message;
+        return;
+      }
+
+      const description = range.startDate
+        ? `history from ${range.startDate} through ${range.endDate}`
+        : 'all recorded screen-time history';
+      if (!window.confirm(`Permanently delete ${description}?\n\nThis cannot be undone. Tracking will continue, so new history will be recorded.`)) {
+        return;
+      }
+
+      button.disabled = true;
+      status.innerText = 'Deleting history…';
+      try {
+        const response = await fetch('/api/history/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(range)
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Could not delete screen-time history.');
+        }
+
+        status.style.color = 'var(--success)';
+        const recordLabel = (count, type) => `${count} ${type} ${count === 1 ? 'record' : 'records'}`;
+        status.innerText = `Deleted ${recordLabel(result.daily_records, 'daily')}, ${recordLabel(result.hourly_records, 'hourly')}, and ${recordLabel(result.sessions, 'session')}.`;
+        fetchDashboard();
+        fetchWeekly();
+      } catch (e) {
+        status.style.color = 'var(--danger)';
+        status.innerText = e.message || 'Could not delete screen-time history.';
+      } finally {
+        button.disabled = false;
       }
     }
 
@@ -2348,6 +3288,11 @@
         saveProfileModal();
       }
     });
+
+    // Theme initialization
+    const initialTheme = localStorage.getItem('tolo_theme') || 'light';
+    setTheme(initialTheme, false);
+    fetchSettings();
 
     loadUserProfile();
     updateDateLabels();

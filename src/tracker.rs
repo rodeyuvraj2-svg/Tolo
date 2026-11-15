@@ -12,6 +12,7 @@ pub struct TrackerService {
     db: Arc<Database>,
     running: Arc<AtomicBool>,
     paused: Arc<AtomicBool>,
+    session_reset_requested: Arc<AtomicBool>,
     tray: Arc<RwLock<Option<Arc<TrayService>>>>,
 }
 
@@ -21,12 +22,17 @@ impl TrackerService {
             db,
             running: Arc::new(AtomicBool::new(false)),
             paused: Arc::new(AtomicBool::new(false)),
+            session_reset_requested: Arc::new(AtomicBool::new(false)),
             tray: Arc::new(RwLock::new(None)),
         }
     }
 
     pub fn paused_handle(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.paused)
+    }
+
+    pub fn reset_active_session(&self) {
+        self.session_reset_requested.store(true, Ordering::SeqCst);
     }
 
     pub fn set_tray(&self, tray: Arc<TrayService>) {
@@ -43,6 +49,7 @@ impl TrackerService {
         let db = Arc::clone(&self.db);
         let running = Arc::clone(&self.running);
         let paused = Arc::clone(&self.paused);
+        let session_reset_requested = Arc::clone(&self.session_reset_requested);
         let _tray_ref = Arc::clone(&self.tray);
 
         thread::spawn(move || {
@@ -79,6 +86,14 @@ impl TrackerService {
                 if is_paused {
                     thread::sleep(Duration::from_secs(interval_secs));
                     continue;
+                }
+
+                if session_reset_requested.swap(false, Ordering::SeqCst) {
+                    if let Some(sid) = current_session_id.take() {
+                        let _ = db.close_session(sid);
+                    }
+                    current_exec_path = None;
+                    was_idle = false;
                 }
 
                 let now = Local::now();
