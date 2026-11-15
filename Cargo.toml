@@ -1,6 +1,6 @@
 [package]
 name = "tolo"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 description = "Tolo — A private, local-only Windows Screen Time & App Usage Tracker in Rust"
 authors = ["Yuvraj Rode"]
